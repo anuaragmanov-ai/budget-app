@@ -1,0 +1,3330 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0F5C5B" id="meta-theme-color">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Бюджет">
+  <title>Семейный бюджет</title>
+  <link rel="manifest" href='data:application/manifest+json,{"name":"Семейный бюджет","short_name":"Бюджет","start_url":".","display":"standalone","background_color":"%23F7F5F0","theme_color":"%230F5C5B","icons":[{"src":"data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 192 192%22%3E%3Crect width=%22192%22 height=%22192%22 rx=%2240%22 fill=%22%230F5C5B%22/%3E%3Ctext x=%2296%22 y=%22130%22 font-size=%22110%22 text-anchor=%22middle%22 fill=%22white%22 font-family=%22sans-serif%22 font-weight=%22700%22%3E₸%3C/text%3E%3C/svg%3E","sizes":"192x192","type":"image/svg+xml"}]}'>
+  <link rel="icon" type="image/svg+xml" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192"><rect width="192" height="192" rx="40" fill="%230F5C5B"/><text x="96" y="130" font-size="110" text-anchor="middle" fill="white" font-family="sans-serif" font-weight="700">₸</text></svg>'>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- PDF.js для чтения текстового слоя PDF -->
+  <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+  <!-- Tesseract.js OCR — резерв для сканов -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <style>
+    /* ===== СВЕТЛАЯ ТЕМА (по умолчанию) ===== */
+    :root {
+      --bg: #F7F5F0; --surface: #FFFFFF; --surface-soft: #FBF9F4;
+      --border: #E8E3D8; --border-strong: #D4CEC0;
+      --text: #141414; --text-secondary: #5C5C5C; --text-tertiary: #9A968D;
+      --accent: #0F5C5B; --accent-soft: #E3EEEC; --accent-glow: rgba(15,92,91,.1);
+      --income: #0F5C5B; --income-soft: #E3EEEC;
+      --expense: #B83A2E; --expense-soft: #F5E4DF;
+      --warning: #C28A1F; --warning-soft: #FBF3E0;
+      --goal: #8B5A9E; --goal-soft: #EFE3F2;
+      --shadow: 0 2px 8px rgba(20,20,20,.06);
+      --modal-bg: rgba(0,0,0,.5);
+      --balance-card-bg: #0F5C5B;
+      --balance-card-text: #FFFFFF;
+      --radius-sm: 8px; --radius: 12px; --radius-lg: 18px; --radius-xl: 24px;
+      --safe-top: env(safe-area-inset-top,0); --safe-bottom: env(safe-area-inset-bottom,0);
+    }
+
+    /* ===== ТЁМНАЯ ТЕМА — принудительная ===== */
+    [data-theme="dark"] {
+      --bg: #0F0F0E;
+      --surface: #1A1A18;
+      --surface-soft: #232320;
+      --border: #2D2D2A;
+      --border-strong: #3D3D39;
+      --text: #E8E6E0;
+      --text-secondary: #A8A59C;
+      --text-tertiary: #6F6C63;
+      --accent: #4DA8A7;
+      --accent-soft: #1A3C3B;
+      --accent-glow: rgba(77,168,167,.15);
+      --income: #4DA8A7;
+      --income-soft: #1A3C3B;
+      --expense: #E26450;
+      --expense-soft: #3D1F1A;
+      --warning: #D9A441;
+      --warning-soft: #3D2E14;
+      --goal: #B57FD0;
+      --goal-soft: #2E1F35;
+      --shadow: 0 2px 12px rgba(0,0,0,.4);
+      --modal-bg: rgba(0,0,0,.7);
+      --balance-card-bg: #1B4948;
+      --balance-card-text: #E8E6E0;
+    }
+
+    /* ===== АВТО-ТЕМА (по системе) — для тех у кого выбрана "Авто" ===== */
+    @media (prefers-color-scheme: dark) {
+      [data-theme="auto"] {
+        --bg: #0F0F0E;
+        --surface: #1A1A18;
+        --surface-soft: #232320;
+        --border: #2D2D2A;
+        --border-strong: #3D3D39;
+        --text: #E8E6E0;
+        --text-secondary: #A8A59C;
+        --text-tertiary: #6F6C63;
+        --accent: #4DA8A7;
+        --accent-soft: #1A3C3B;
+        --accent-glow: rgba(77,168,167,.15);
+        --income: #4DA8A7;
+        --income-soft: #1A3C3B;
+        --expense: #E26450;
+        --expense-soft: #3D1F1A;
+        --warning: #D9A441;
+        --warning-soft: #3D2E14;
+        --goal: #B57FD0;
+        --goal-soft: #2E1F35;
+        --shadow: 0 2px 12px rgba(0,0,0,.4);
+        --modal-bg: rgba(0,0,0,.7);
+        --balance-card-bg: #1B4948;
+        --balance-card-text: #E8E6E0;
+      }
+    }
+
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html,body { margin:0; padding:0; height:100%; overflow:hidden; }
+    body {
+      font-family: -apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Roboto,sans-serif;
+      font-size:16px; line-height:1.4; color:var(--text); background:var(--bg);
+      -webkit-font-smoothing:antialiased; user-select:none; -webkit-user-select:none; overscroll-behavior:none;
+      transition: background .2s, color .2s;
+    }
+    .num { font-variant-numeric:tabular-nums; font-feature-settings:"tnum" 1; }
+
+    /* ===== ЭКРАН БЛОКИРОВКИ ===== */
+    #lock-screen {
+      position: fixed; inset: 0; z-index: 999;
+      background: var(--bg); color: var(--text);
+      display: none; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: var(--safe-top) 20px var(--safe-bottom);
+    }
+    #lock-screen.active { display: flex; }
+    .lock-logo {
+      width: 72px; height: 72px; border-radius: 20px;
+      background: var(--accent); color: white;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 36px; font-weight: 700; margin-bottom: 24px;
+    }
+    .lock-title {
+      font-size: 22px; font-weight: 700; letter-spacing: -.02em;
+      margin: 0 0 8px;
+    }
+    .lock-subtitle {
+      font-size: 14px; color: var(--text-tertiary);
+      margin-bottom: 40px;
+    }
+    .pin-dots {
+      display: flex; gap: 16px; margin-bottom: 48px;
+    }
+    .pin-dot {
+      width: 16px; height: 16px; border-radius: 50%;
+      border: 2px solid var(--border-strong);
+      background: transparent;
+      transition: all .15s;
+    }
+    .pin-dot.filled {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+    .pin-dots.error {
+      animation: shake .35s;
+    }
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      20% { transform: translateX(-12px); }
+      40% { transform: translateX(12px); }
+      60% { transform: translateX(-8px); }
+      80% { transform: translateX(8px); }
+    }
+    .pin-error-msg {
+      color: var(--expense); font-size: 13px;
+      margin-top: -32px; margin-bottom: 16px;
+      min-height: 18px;
+    }
+    .pin-numpad {
+      display: grid;
+      grid-template-columns: repeat(3, 72px);
+      gap: 14px;
+    }
+    .pin-key {
+      width: 72px; height: 72px; border-radius: 50%;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      font-family: inherit; font-size: 28px; font-weight: 500;
+      cursor: pointer;
+      transition: transform .05s, background .1s;
+    }
+    .pin-key:active {
+      background: var(--surface-soft);
+      transform: scale(.94);
+    }
+    .pin-key.blank {
+      background: transparent; border: none; cursor: default;
+    }
+    .pin-key.del { font-size: 22px; color: var(--text-secondary); }
+    .lock-footer {
+      margin-top: 24px;
+      font-size: 13px; color: var(--text-tertiary);
+      background: none; border: none; font-family: inherit;
+      cursor: pointer; padding: 8px;
+    }
+
+    /* ===== СТРУКТУРА ===== */
+    #app {
+      height:100vh; height:100dvh; display:flex; flex-direction:column;
+      max-width:600px; margin:0 auto; position:relative; background:var(--bg);
+    }
+    .screen {
+      display:none; flex:1; overflow-y:auto; overflow-x:hidden;
+      -webkit-overflow-scrolling:touch;
+      padding-top:var(--safe-top); padding-bottom:calc(80px + var(--safe-bottom));
+    }
+    .screen.active { display:block; }
+    .screen-header { padding:20px 20px 8px; }
+    .screen-header h1 { font-size:26px; font-weight:700; letter-spacing:-.02em; margin:0; }
+    .screen-header .subtitle { color:var(--text-tertiary); font-size:14px; margin-top:2px; }
+
+    /* ===== ТАББАР — 5 вкладок ===== */
+    .tabbar {
+      position:absolute; bottom:0; left:0; right:0; display:flex;
+      background:var(--surface); border-top:1px solid var(--border);
+      padding-bottom:var(--safe-bottom); z-index:10;
+    }
+    .tab {
+      flex:1; background:none; border:none; padding:10px 2px 8px;
+      display:flex; flex-direction:column; align-items:center; gap:3px;
+      color:var(--text-tertiary); cursor:pointer; font-family:inherit;
+      font-size:10px; font-weight:500; transition:color .15s;
+    }
+    .tab.active { color:var(--accent); }
+    .tab svg { width:20px; height:20px; }
+
+    /* ===== БАЛАНС-КАРТОЧКА ===== */
+    .balance-card {
+      margin:8px 20px 20px; padding:24px 22px;
+      background:var(--balance-card-bg); border-radius:var(--radius-xl);
+      color:var(--balance-card-text); position:relative; overflow:hidden;
+    }
+    .balance-card::after {
+      content:""; position:absolute; right:-50px; bottom:-50px;
+      width:180px; height:180px; border-radius:50%;
+      background:rgba(255,255,255,.04); pointer-events:none;
+    }
+    .balance-label { font-size:13px; opacity:.75; letter-spacing:.02em; text-transform:uppercase; font-weight:500; }
+    .balance-amount { font-size:38px; font-weight:700; letter-spacing:-.03em; margin-top:6px; line-height:1.1; }
+    .balance-meta { display:flex; gap:20px; margin-top:18px; position:relative; z-index:1; }
+    .balance-meta-item { display:flex; flex-direction:column; }
+    .balance-meta-label { font-size:12px; opacity:.7; }
+    .balance-meta-value { font-size:16px; font-weight:600; margin-top:2px; }
+
+    /* ===== БЫСТРЫЕ КНОПКИ ===== */
+    .quick-actions { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:0 20px 24px; }
+    .quick-btn {
+      padding:18px 16px; border-radius:var(--radius-lg); border:none;
+      font-family:inherit; font-size:16px; font-weight:600; cursor:pointer;
+      display:flex; align-items:center; gap:10px; transition:transform .1s;
+    }
+    .quick-btn:active { transform:scale(.97); }
+    .quick-btn.income { background:var(--income-soft); color:var(--income); }
+    .quick-btn.expense { background:var(--expense-soft); color:var(--expense); }
+    .quick-btn svg { width:22px; height:22px; }
+
+    /* ===== СЕКЦИИ ===== */
+    .section { margin:0 20px 20px; }
+    .section-title { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:12px; }
+    .section-title h2 { font-size:16px; font-weight:600; margin:0; letter-spacing:-.01em; }
+    .section-title a { font-size:13px; color:var(--accent); text-decoration:none; cursor:pointer; font-weight:500; }
+
+    /* ===== СПИСОК ТРАНЗАКЦИЙ ===== */
+    .tx-list { background:var(--surface); border-radius:var(--radius-lg); overflow:hidden; border:1px solid var(--border); }
+    .tx-item {
+      display:flex; align-items:center; gap:12px; padding:14px 16px;
+      border-bottom:1px solid var(--border); cursor:pointer; transition:background .1s;
+    }
+    .tx-item:last-child { border-bottom:none; }
+    .tx-item:active { background:var(--surface-soft); }
+    .tx-icon { width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; background:var(--surface-soft); }
+    .tx-content { flex:1; min-width:0; }
+    .tx-title { font-size:15px; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .tx-subtitle { font-size:12px; color:var(--text-tertiary); margin-top:2px; }
+    .tx-amount { font-size:15px; font-weight:600; white-space:nowrap; }
+    .tx-amount.income { color:var(--income); }
+    .tx-amount.expense { color:var(--text); }
+
+    /* ===== ПУСТЫЕ СОСТОЯНИЯ ===== */
+    .empty { text-align:center; padding:40px 20px; color:var(--text-tertiary); }
+    .empty-title { font-size:15px; font-weight:500; color:var(--text-secondary); margin-bottom:4px; }
+    .empty-hint { font-size:13px; }
+
+    /* ===== ФИЛЬТРЫ ===== */
+    .filters { display:flex; gap:8px; padding:0 20px 16px; overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+    .filters::-webkit-scrollbar { display:none; }
+    .filter-chip {
+      padding:8px 14px; border-radius:100px; background:var(--surface); border:1px solid var(--border);
+      font-family:inherit; font-size:13px; font-weight:500; color:var(--text-secondary); cursor:pointer; white-space:nowrap; flex-shrink:0;
+    }
+    .filter-chip.active { background:var(--text); color:var(--bg); border-color:var(--text); }
+
+    /* Переключатель вид/графики */
+    .view-toggle {
+      display:flex; gap:4px; margin:0 20px 16px;
+      background:var(--surface); border:1px solid var(--border);
+      border-radius:14px; padding:4px;
+    }
+    .view-toggle button {
+      flex:1; padding:10px; border:none; background:none;
+      border-radius:10px; font-family:inherit; font-size:14px; font-weight:600;
+      color:var(--text-tertiary); cursor:pointer; transition:all .15s;
+    }
+    .view-toggle button.active { background:var(--accent-soft); color:var(--accent); }
+
+    /* ===== ГРУППЫ ПО ДАТАМ ===== */
+    .date-group { margin:0 20px 16px; }
+    .date-group-header { display:flex; justify-content:space-between; padding:0 4px 8px; font-size:13px; color:var(--text-tertiary); font-weight:500; }
+
+    /* ===== ГРАФИКИ ===== */
+    .chart-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:18px; margin:0 20px 16px; }
+    .chart-card h3 { font-size:15px; font-weight:600; margin:0 0 14px; }
+    .chart-wrap { position:relative; height:220px; }
+    .cat-legend { margin-top:16px; display:flex; flex-direction:column; gap:10px; }
+    .legend-row { display:flex; align-items:center; gap:10px; font-size:14px; }
+    .legend-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+    .legend-name { flex:1; }
+    .legend-value { font-weight:600; font-size:13px; }
+    .legend-pct { color:var(--text-tertiary); font-size:12px; min-width:40px; text-align:right; }
+
+    /* ===== ЦЕЛИ ===== */
+    .goal-card {
+      background:var(--surface); border:1px solid var(--border);
+      border-radius:var(--radius-lg); margin:0 20px 12px;
+      padding:18px 16px; cursor:pointer;
+      transition:transform .1s;
+    }
+    .goal-card:active { transform:scale(.99); }
+    .goal-header { display:flex; align-items:center; gap:12px; margin-bottom:14px; }
+    .goal-icon {
+      width:48px; height:48px; border-radius:14px;
+      background:var(--goal-soft); color:var(--goal);
+      display:flex; align-items:center; justify-content:center;
+      font-size:24px; flex-shrink:0;
+    }
+    .goal-info { flex:1; min-width:0; }
+    .goal-name {
+      font-size:16px; font-weight:600; letter-spacing:-.01em;
+      overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+    }
+    .goal-deadline {
+      font-size:12px; color:var(--text-tertiary); margin-top:2px;
+    }
+    .goal-deadline.due { color:var(--expense); }
+    .goal-priority {
+      font-size:10px; font-weight:700; padding:3px 8px;
+      border-radius:100px; text-transform:uppercase; letter-spacing:.04em;
+      flex-shrink:0;
+    }
+    .goal-priority.high { background:var(--expense-soft); color:var(--expense); }
+    .goal-priority.med { background:var(--warning-soft); color:var(--warning); }
+    .goal-priority.low { background:var(--surface-soft); color:var(--text-tertiary); }
+
+    .goal-progress-line {
+      display:flex; justify-content:space-between; align-items:baseline;
+      margin-bottom:6px;
+    }
+    .goal-progress-current {
+      font-size:18px; font-weight:700; letter-spacing:-.01em;
+      color:var(--text);
+    }
+    .goal-progress-target {
+      font-size:13px; color:var(--text-tertiary);
+    }
+    .goal-progress-bar {
+      height:8px; background:var(--border); border-radius:100px;
+      overflow:hidden; margin-bottom:10px;
+    }
+    .goal-progress-fill {
+      height:100%; background:var(--goal); border-radius:100px;
+      transition:width .4s ease;
+    }
+    .goal-progress-fill.complete { background:var(--income); }
+    .goal-meta {
+      display:flex; justify-content:space-between;
+      font-size:12px; color:var(--text-secondary);
+    }
+    .goal-meta-monthly { font-weight:500; }
+
+    /* ===== КРЕДИТЫ (как в v2) ===== */
+    .credit-card {
+      margin:8px 20px 16px; border-radius:var(--radius-xl);
+      border:1px solid var(--border); overflow:hidden; background:var(--surface);
+    }
+    .credit-card-header { padding:18px 20px 14px; color:white; }
+    .credit-card-bank { font-size:12px; opacity:.75; text-transform:uppercase; letter-spacing:.06em; font-weight:600; }
+    .credit-card-name { font-size:18px; font-weight:700; margin-top:4px; letter-spacing:-.01em; }
+    .credit-card-meta { display:flex; gap:20px; margin-top:14px; }
+    .credit-card-meta-item { display:flex; flex-direction:column; }
+    .credit-card-meta-label { font-size:11px; opacity:.7; }
+    .credit-card-meta-value { font-size:15px; font-weight:600; margin-top:2px; }
+    .credit-progress-wrap { padding:16px 20px; border-bottom:1px solid var(--border); }
+    .credit-progress-label { display:flex; justify-content:space-between; margin-bottom:8px; font-size:13px; color:var(--text-secondary); }
+    .credit-progress-bar { height:8px; background:var(--border); border-radius:100px; overflow:hidden; }
+    .credit-progress-fill { height:100%; background:var(--accent); border-radius:100px; transition:width .4s ease; }
+    .credit-progress-pct { font-weight:600; color:var(--accent); }
+    .next-payment-banner {
+      margin:0 20px 16px; padding:14px 16px;
+      background:var(--warning-soft); border:1px solid var(--border);
+      border-radius:var(--radius-lg);
+      display:flex; align-items:center; gap:12px;
+    }
+    .next-payment-icon { font-size:24px; flex-shrink:0; }
+    .next-payment-info { flex:1; }
+    .next-payment-date { font-size:13px; color:var(--warning); font-weight:600; }
+    .next-payment-amount { font-size:20px; font-weight:700; color:var(--text); margin-top:2px; }
+    .next-payment-detail { font-size:12px; color:var(--text-tertiary); margin-top:2px; }
+    .credit-summary { display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--border); margin:0 20px 16px; border-radius:var(--radius-lg); overflow:hidden; }
+    .credit-summary-item { background:var(--surface); padding:14px 16px; }
+    .credit-summary-label { font-size:12px; color:var(--text-tertiary); }
+    .credit-summary-value { font-size:17px; font-weight:700; margin-top:4px; }
+    .credit-summary-value.paid { color:var(--income); }
+    .credit-summary-value.debt { color:var(--expense); }
+    .credit-summary-sub { font-size:11px; color:var(--text-tertiary); margin-top:2px; }
+
+    .payments-table-wrap { margin:0 20px 16px; }
+    .payments-table-header { display:flex; padding:0 4px 8px; font-size:12px; color:var(--text-tertiary); font-weight:500; }
+    .pt-n { width:36px; flex-shrink:0; }
+    .pt-date { flex:1.2; }
+    .pt-total { flex:1; text-align:right; }
+    .pt-interest { flex:1; text-align:right; }
+    .pt-principal { flex:1; text-align:right; }
+    .pt-balance { flex:1.2; text-align:right; }
+    .payment-row {
+      display:flex; align-items:center; padding:10px 4px;
+      border-bottom:1px solid var(--border); font-size:13px;
+      cursor:pointer; transition:background .1s;
+    }
+    .payment-row:last-child { border-bottom:none; }
+    .payment-row:active { background:var(--surface-soft); }
+    .payment-row.paid { opacity:.5; }
+    .payment-row.current { background:var(--warning-soft); border-radius:var(--radius-sm); }
+    .pt-n-val { width:36px; flex-shrink:0; color:var(--text-tertiary); font-weight:500; }
+    .pt-date-val { flex:1.2; }
+    .pt-total-val { flex:1; text-align:right; font-weight:600; }
+    .pt-interest-val { flex:1; text-align:right; color:var(--expense); }
+    .pt-principal-val { flex:1; text-align:right; color:var(--income); }
+    .pt-balance-val { flex:1.2; text-align:right; color:var(--text-secondary); }
+
+    .credit-section-title { font-size:12px; font-weight:600; color:var(--text-secondary); padding:0 4px; margin-bottom:10px; letter-spacing:.01em; text-transform:uppercase; }
+
+    /* ===== НАСТРОЙКИ ===== */
+    .settings-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); margin:0 20px 16px; overflow:hidden; }
+    .settings-row { display:flex; align-items:center; gap:12px; padding:14px 16px; border-bottom:1px solid var(--border); cursor:pointer; }
+    .settings-row:last-child { border-bottom:none; }
+    .settings-row:active { background:var(--surface-soft); }
+    .cat-icon { width:36px; height:36px; border-radius:50%; background:var(--surface-soft); display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
+    .cat-name { flex:1; font-size:15px; font-weight:500; }
+    .cat-value { font-size:13px; color:var(--text-tertiary); }
+    .cat-action { background:none; border:none; padding:8px; color:var(--text-tertiary); cursor:pointer; font-family:inherit; }
+    .add-row { display:flex; align-items:center; gap:10px; padding:14px 16px; cursor:pointer; color:var(--accent); font-weight:500; font-size:15px; }
+    .add-row svg { width:20px; height:20px; }
+
+    /* Регулярные платежи */
+    .recurring-item { display:flex; align-items:center; gap:12px; padding:14px 16px; border-bottom:1px solid var(--border); cursor:pointer; }
+    .recurring-item:last-child { border-bottom:none; }
+    .recurring-day { width:44px; height:44px; border-radius:12px; background:var(--accent-soft); color:var(--accent); display:flex; flex-direction:column; align-items:center; justify-content:center; flex-shrink:0; font-weight:700; }
+    .recurring-day-num { font-size:18px; line-height:1; }
+    .recurring-day-label { font-size:9px; text-transform:uppercase; opacity:.7; margin-top:2px; }
+    .recurring-day.due { background:var(--expense-soft); color:var(--expense); }
+
+    /* ===== МОДАЛКИ ===== */
+    .modal-backdrop { position:fixed; inset:0; background:var(--modal-bg); display:none; z-index:100; align-items:flex-end; justify-content:center; }
+    .modal-backdrop.active { display:flex; animation:fadeIn .2s; }
+    @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+    .modal {
+      width:100%; max-width:600px; background:var(--bg);
+      border-radius:var(--radius-xl) var(--radius-xl) 0 0;
+      max-height:92vh; overflow-y:auto;
+      animation:slideUp .25s ease-out;
+      padding-bottom:var(--safe-bottom);
+    }
+    @keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
+    .modal-header { display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-bottom:1px solid var(--border); position:sticky; top:0; background:var(--bg); z-index:1; }
+    .modal-header h2 { font-size:18px; font-weight:600; margin:0; }
+    .modal-close { background:var(--surface); border:1px solid var(--border); width:32px; height:32px; border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center; font-family:inherit; font-size:18px; color:var(--text-secondary); }
+    .modal-body { padding:20px; }
+
+    /* Тип */
+    .type-toggle { display:grid; grid-template-columns:1fr 1fr; gap:6px; background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:4px; margin-bottom:24px; }
+    .type-btn { padding:12px; border:none; background:none; border-radius:10px; font-family:inherit; font-size:15px; font-weight:600; color:var(--text-tertiary); cursor:pointer; transition:all .15s; }
+    .type-btn.active.income { background:var(--income-soft); color:var(--income); }
+    .type-btn.active.expense { background:var(--expense-soft); color:var(--expense); }
+
+    /* Нампад */
+    .amount-display { text-align:center; padding:20px 0; font-size:44px; font-weight:700; letter-spacing:-.03em; color:var(--text); min-height:80px; }
+    .amount-display.empty { color:var(--text-tertiary); }
+    .amount-currency { font-size:24px; color:var(--text-tertiary); margin-left:6px; font-weight:500; }
+    .numpad { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:20px; }
+    .num-key { padding:18px 0; background:var(--surface); border:1px solid var(--border); border-radius:14px; font-family:inherit; font-size:22px; font-weight:600; cursor:pointer; transition:transform .05s,background .1s; color:var(--text); }
+    .num-key:active { background:var(--surface-soft); transform:scale(.95); }
+    .num-key.del { color:var(--expense); }
+
+    /* Сетка категорий */
+    .cat-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:20px; }
+    .cat-pick { padding:12px 4px; background:var(--surface); border:1px solid var(--border); border-radius:14px; cursor:pointer; text-align:center; transition:all .15s; font-family:inherit; }
+    .cat-pick.active { border-color:var(--accent); background:var(--accent-soft); }
+    .cat-pick-emoji { font-size:24px; margin-bottom:4px; }
+    .cat-pick-name { font-size:11px; font-weight:500; color:var(--text-secondary); line-height:1.2; }
+    .cat-pick.active .cat-pick-name { color:var(--accent); }
+
+    /* Поля формы */
+    .field { margin-bottom:16px; }
+    .field-label { display:block; font-size:13px; font-weight:500; color:var(--text-secondary); margin-bottom:6px; }
+    .field-input,.field-select { width:100%; padding:14px 16px; background:var(--surface); border:1px solid var(--border); border-radius:12px; font-family:inherit; font-size:15px; color:var(--text); -webkit-appearance:none; appearance:none; }
+    .field-input:focus,.field-select:focus { outline:none; border-color:var(--accent); }
+
+    /* Кнопки */
+    .btn-primary { width:100%; padding:16px; background:var(--accent); color:white; border:none; border-radius:14px; font-family:inherit; font-size:16px; font-weight:600; cursor:pointer; transition:opacity .15s,transform .1s; }
+    .btn-primary:active { transform:scale(.98); }
+    .btn-secondary { width:100%; padding:14px; background:var(--surface); color:var(--text); border:1px solid var(--border); border-radius:14px; font-family:inherit; font-size:15px; font-weight:500; cursor:pointer; margin-top:8px; }
+    .btn-danger { width:100%; padding:14px; background:var(--expense-soft); color:var(--expense); border:none; border-radius:14px; font-family:inherit; font-size:15px; font-weight:500; cursor:pointer; margin-top:8px; }
+
+    /* Тост */
+    .toast { position:fixed; bottom:calc(100px + var(--safe-bottom)); left:50%; transform:translateX(-50%); background:var(--text); color:var(--bg); padding:12px 20px; border-radius:100px; font-size:14px; font-weight:500; z-index:200; opacity:0; transition:opacity .2s,transform .2s; pointer-events:none; white-space:nowrap; }
+    .toast.show { opacity:1; transform:translateX(-50%) translateY(-6px); }
+
+    /* Сегменты выбора темы */
+    .segmented {
+      display:grid; grid-template-columns:repeat(3, 1fr); gap:4px;
+      background:var(--surface-soft); border:1px solid var(--border);
+      border-radius:12px; padding:4px;
+    }
+    .segmented button {
+      padding:10px; border:none; background:none;
+      border-radius:8px; font-family:inherit; font-size:13px; font-weight:600;
+      color:var(--text-tertiary); cursor:pointer; transition:all .15s;
+    }
+    .segmented button.active { background:var(--surface); color:var(--text); box-shadow:var(--shadow); }
+
+    /* ===== КРЕДИТ КАК КАТЕГОРИЯ РАСХОДА ===== */
+    .cat-pick.credit-pick { border-color: var(--warning); }
+    .cat-pick.credit-pick.active { background: var(--warning-soft); border-color: var(--warning); }
+    .cat-pick.credit-pick .cat-pick-name { color: var(--warning); }
+
+    /* ===== PDF ИМПОРТ — оверлей загрузки ===== */
+    .pdf-overlay {
+      position: fixed; inset: 0; z-index: 999;
+      background: rgba(0,0,0,.7);
+      display: none; flex-direction: column;
+      align-items: center; justify-content: center;
+      color: white;
+    }
+    .pdf-overlay.active { display: flex; animation: fadeIn .2s; }
+    .pdf-spinner {
+      width: 52px; height: 52px; border-radius: 50%;
+      border: 4px solid rgba(255,255,255,.2);
+      border-top-color: white;
+      animation: spin 1s linear infinite;
+      margin-bottom: 20px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .pdf-overlay-title { font-size: 18px; font-weight: 600; margin-bottom: 6px; }
+    .pdf-overlay-sub { font-size: 13px; opacity: .7; max-width: 260px; text-align: center; }
+    .pdf-overlay-progress {
+      width: 200px; height: 4px; background: rgba(255,255,255,.2);
+      border-radius: 100px; margin-top: 16px; overflow: hidden;
+    }
+    .pdf-overlay-bar {
+      height: 100%; background: white; border-radius: 100px;
+      transition: width .3s; width: 0%;
+    }
+
+    /* ===== РЕЗУЛЬТАТЫ ИМПОРТА ===== */
+    .import-result-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); margin: 0 20px 16px; padding: 16px;
+    }
+    .import-result-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 12px;
+    }
+    .import-result-title { font-size: 15px; font-weight: 600; }
+    .import-result-badge {
+      font-size: 12px; font-weight: 700; padding: 3px 10px;
+      border-radius: 100px; background: var(--accent-soft); color: var(--accent);
+    }
+    .import-result-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 10px 0; border-bottom: 1px solid var(--border);
+      font-size: 14px;
+    }
+    .import-result-row:last-child { border-bottom: none; }
+    .import-result-check {
+      width: 20px; height: 20px; border-radius: 50%;
+      border: 2px solid var(--border); background: var(--surface);
+      cursor: pointer; flex-shrink: 0; margin-right: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; transition: all .1s;
+    }
+    .import-result-check.checked {
+      background: var(--accent); border-color: var(--accent); color: white;
+    }
+
+    /* ===== ОТПЕЧАТОК ПАЛЬЦА — стиль кнопки ===== */
+    .biometric-btn {
+      margin-top: 16px; background: none; border: none;
+      font-size: 40px; cursor: pointer; opacity: .6;
+      transition: opacity .2s;
+    }
+    .biometric-btn:active { opacity: 1; transform: scale(.9); }
+
+  </style>
+</head>
+<body>
+
+<!-- ========== ЭКРАН БЛОКИРОВКИ ========== -->
+
+<!-- Индикатор синхронизации -->
+<div id="sync-bar" style="
+  position:fixed; top:0; left:0; right:0; z-index:998;
+  background:var(--accent); color:white;
+  font-size:12px; font-weight:500; text-align:center;
+  padding:6px; display:none;
+  padding-top:calc(6px + var(--safe-top));
+">
+  <span id="sync-bar-text">⟳ Синхронизация...</span>
+</div>
+
+<div id="lock-screen">
+  <div class="lock-logo">₸</div>
+  <h1 class="lock-title" id="lock-title">Введите ПИН-код</h1>
+  <div class="lock-subtitle" id="lock-subtitle">4 цифры для входа</div>
+  <div class="pin-dots" id="pin-dots">
+    <div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div>
+  </div>
+  <div class="pin-error-msg" id="pin-error"></div>
+  <div class="pin-numpad">
+    <button class="pin-key" onclick="pinKey('1')">1</button>
+    <button class="pin-key" onclick="pinKey('2')">2</button>
+    <button class="pin-key" onclick="pinKey('3')">3</button>
+    <button class="pin-key" onclick="pinKey('4')">4</button>
+    <button class="pin-key" onclick="pinKey('5')">5</button>
+    <button class="pin-key" onclick="pinKey('6')">6</button>
+    <button class="pin-key" onclick="pinKey('7')">7</button>
+    <button class="pin-key" onclick="pinKey('8')">8</button>
+    <button class="pin-key" onclick="pinKey('9')">9</button>
+    <button class="pin-key blank"></button>
+    <button class="pin-key" onclick="pinKey('0')">0</button>
+    <button class="pin-key del" onclick="pinKey('del')">⌫</button>
+  </div>
+  <button class="biometric-btn" id="biometric-btn" onclick="tryBiometric()" style="display:none">👆</button>
+  <button class="lock-footer" id="lock-footer-btn" onclick="forgotPin()">Забыли ПИН?</button>
+</div>
+
+<!-- ========== ОСНОВНОЕ ПРИЛОЖЕНИЕ ========== -->
+<div id="app">
+
+  <!-- ГЛАВНАЯ -->
+  <main id="screen-home" class="screen active">
+    <header class="screen-header">
+      <div class="subtitle" id="today-label"></div>
+      <h1>Бюджет</h1>
+    </header>
+    <div class="balance-card">
+      <div class="balance-label">Текущий баланс</div>
+      <div class="balance-amount num" id="balance-amount">0 ₸</div>
+      <div class="balance-meta">
+        <div class="balance-meta-item">
+          <span class="balance-meta-label">Доходы / мес</span>
+          <span class="balance-meta-value num" id="month-income">0 ₸</span>
+        </div>
+        <div class="balance-meta-item">
+          <span class="balance-meta-label">Расходы / мес</span>
+          <span class="balance-meta-value num" id="month-expense">0 ₸</span>
+        </div>
+      </div>
+    </div>
+    <div class="quick-actions">
+      <button class="quick-btn income" onclick="openAddModal('income')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12l7-7 7 7"/></svg>Доход
+      </button>
+      <button class="quick-btn expense" onclick="openAddModal('expense')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 19V5M5 12l7 7 7-7"/></svg>Расход
+      </button>
+    </div>
+    <div class="section" id="home-goals-section" style="display:none">
+      <div class="section-title">
+        <h2>Цели</h2>
+        <a onclick="switchTab('goals')">Все →</a>
+      </div>
+      <div id="home-goals-list"></div>
+    </div>
+    <div class="section" id="home-credits-section" style="display:none">
+      <div class="section-title">
+        <h2>Кредиты</h2>
+        <a onclick="switchTab('credits')">Подробнее →</a>
+      </div>
+      <div id="home-credits-list"></div>
+    </div>
+    <div class="section" id="upcoming-section" style="display:none">
+      <div class="section-title"><h2>Ближайшие платежи</h2></div>
+      <div class="tx-list" id="upcoming-list"></div>
+    </div>
+    <div class="section">
+      <div class="section-title"><h2>Последние операции</h2><a onclick="switchTab('history')">Все →</a></div>
+      <div id="recent-tx"></div>
+    </div>
+  </main>
+
+  <!-- ИСТОРИЯ -->
+  <main id="screen-history" class="screen">
+    <header class="screen-header"><h1>История</h1></header>
+    <div class="view-toggle">
+      <button class="active" id="view-list-btn" onclick="setHistoryView('list')">📋 Список</button>
+      <button id="view-charts-btn" onclick="setHistoryView('charts')">📊 Графики</button>
+    </div>
+
+    <!-- ВИД: СПИСОК -->
+    <div id="history-list-view">
+      <div class="filters" id="period-filters">
+        <button class="filter-chip active" data-period="month">Месяц</button>
+        <button class="filter-chip" data-period="week">Неделя</button>
+        <button class="filter-chip" data-period="all">Всё время</button>
+      </div>
+      <div class="filters" id="type-filters">
+        <button class="filter-chip active" data-type="all">Все</button>
+        <button class="filter-chip" data-type="income">Доходы</button>
+        <button class="filter-chip" data-type="expense">Расходы</button>
+      </div>
+      <div id="history-list"></div>
+    </div>
+
+    <!-- ВИД: ГРАФИКИ -->
+    <div id="history-charts-view" style="display:none">
+      <div class="chart-card">
+        <h3>Расходы по категориям</h3>
+        <div class="chart-wrap"><canvas id="chart-pie"></canvas></div>
+        <div class="cat-legend" id="pie-legend"></div>
+      </div>
+      <div class="chart-card">
+        <h3>Доходы и расходы (6 месяцев)</h3>
+        <div class="chart-wrap"><canvas id="chart-bar"></canvas></div>
+      </div>
+      <div class="section">
+        <div class="section-title"><h2>Регулярные платежи</h2><a onclick="openRecurringModal()">+ Добавить</a></div>
+        <div class="tx-list" id="recurring-list"></div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ЦЕЛИ -->
+  <main id="screen-goals" class="screen">
+    <header class="screen-header">
+      <h1>Цели</h1>
+      <div class="subtitle">Планы и накопления</div>
+    </header>
+    <div style="margin:0 20px 16px;">
+      <button class="btn-primary" onclick="openAddGoalModal()">+ Новая цель</button>
+    </div>
+    <div id="goals-list"></div>
+  </main>
+
+  <!-- КРЕДИТЫ -->
+  <main id="screen-credits" class="screen">
+    <header class="screen-header">
+      <h1>Кредиты</h1>
+      <div class="subtitle">График погашения по банкам</div>
+    </header>
+    <div style="margin:0 20px 16px;">
+      <button class="btn-primary" onclick="openAddCreditModal()">+ Добавить кредит</button>
+    </div>
+    <div id="credits-list"></div>
+  </main>
+
+  <!-- НАСТРОЙКИ -->
+  <main id="screen-settings" class="screen">
+    <header class="screen-header"><h1>Настройки</h1></header>
+
+    <!-- ТЕМА -->
+    <div class="section">
+      <div class="section-title"><h2>Тема оформления</h2></div>
+      <div style="margin:0 20px 8px;">
+        <div class="segmented" id="theme-segmented">
+          <button data-theme="light" onclick="setTheme('light')">☀️ Светлая</button>
+          <button data-theme="dark" onclick="setTheme('dark')">🌙 Тёмная</button>
+          <button data-theme="auto" onclick="setTheme('auto')">⚙️ Авто</button>
+        </div>
+        <div style="font-size:12px; color:var(--text-tertiary); margin-top:8px; padding:0 4px;">
+          «Авто» подстраивается под системные настройки телефона
+        </div>
+      </div>
+    </div>
+
+    <!-- БЕЗОПАСНОСТЬ -->
+    <div class="section">
+      <div class="section-title"><h2>Безопасность</h2></div>
+      <div class="settings-card">
+        <div class="settings-row" onclick="togglePin()">
+          <div class="cat-icon">🔐</div>
+          <div class="cat-name">ПИН-код при входе</div>
+          <div class="cat-value" id="pin-status">Выкл</div>
+        </div>
+        <div class="settings-row" onclick="changePin()" id="change-pin-row" style="display:none">
+          <div class="cat-icon">🔑</div>
+          <div class="cat-name">Сменить ПИН-код</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- КАТЕГОРИИ -->
+    <div class="section">
+      <div class="section-title"><h2>Категории расходов</h2></div>
+      <div class="settings-card" id="cats-expense"></div>
+      <div class="settings-card" style="margin-top:8px;">
+        <div class="add-row" onclick="openCategoryModal('expense')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>
+          Новая категория
+        </div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title"><h2>Категории доходов</h2></div>
+      <div class="settings-card" id="cats-income"></div>
+      <div class="settings-card" style="margin-top:8px;">
+        <div class="add-row" onclick="openCategoryModal('income')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>
+          Новая категория
+        </div>
+      </div>
+    </div>
+
+    <!-- ИМПОРТ ВЫПИСОК -->
+    <div class="section">
+      <div class="section-title"><h2>Импорт банковских выписок</h2></div>
+      <div class="settings-card">
+        <div class="settings-row" onclick="document.getElementById('pdf-bank-import').click()">
+          <div class="cat-icon">📄</div>
+          <div class="cat-name">Загрузить PDF-выписку</div>
+          <div class="cat-value">Kaspi · Forte · Народный</div>
+        </div>
+        <div class="settings-row" onclick="document.getElementById('pdf-credit-import').click()">
+          <div class="cat-icon">📊</div>
+          <div class="cat-name">График погашения кредита (PDF)</div>
+          <div class="cat-value">Добавить кредит</div>
+        </div>
+      </div>
+      <input type="file" id="pdf-bank-import" accept=".pdf" style="display:none" onchange="handleBankStatementPdf(event)">
+      <input type="file" id="pdf-credit-import" accept=".pdf" style="display:none" onchange="handleCreditSchedulePdf(event)">
+    </div>
+
+    <!-- ДАННЫЕ -->
+    <div class="section">
+      <div class="section-title"><h2>Данные</h2></div>
+      <div class="settings-card">
+        <div class="settings-row" onclick="exportData()"><div class="cat-icon">💾</div><div class="cat-name">Экспорт в файл (JSON)</div></div>
+        <div class="settings-row" onclick="importData()"><div class="cat-icon">📥</div><div class="cat-name">Импорт из файла</div></div>
+        <div class="settings-row" onclick="confirmReset()"><div class="cat-icon">🗑️</div><div class="cat-name" style="color:var(--expense)">Удалить все данные</div></div>
+      </div>
+    </div>
+
+    <div style="text-align:center; color:var(--text-tertiary); font-size:12px; padding:20px;">
+      Семейный бюджет · v3.0
+    </div>
+  </main>
+</div>
+
+<!-- ========== НАВИГАЦИЯ ========== -->
+<nav class="tabbar">
+  <button class="tab active" data-screen="home" onclick="switchTab('home')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12l9-9 9 9M5 10v10h14V10"/></svg>Главная
+  </button>
+  <button class="tab" data-screen="history" onclick="switchTab('history')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>История
+  </button>
+  <button class="tab" data-screen="goals" onclick="switchTab('goals')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></svg>Цели
+  </button>
+  <button class="tab" data-screen="credits" onclick="switchTab('credits')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>Кредиты
+  </button>
+  <button class="tab" data-screen="settings" onclick="switchTab('settings')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Ещё
+  </button>
+</nav>
+
+<!-- ========== МОДАЛИ ========== -->
+<!-- Транзакция -->
+<div class="modal-backdrop" id="modal-add">
+  <div class="modal">
+    <div class="modal-header"><h2 id="add-title">Новая операция</h2><button class="modal-close" onclick="closeModal('modal-add')">✕</button></div>
+    <div class="modal-body">
+      <div class="type-toggle">
+        <button class="type-btn income active" id="btn-type-income" onclick="setAddType('income')">Доход</button>
+        <button class="type-btn expense" id="btn-type-expense" onclick="setAddType('expense')">Расход</button>
+      </div>
+      <div class="amount-display empty num" id="amount-display"><span id="amount-value">0</span><span class="amount-currency">₸</span></div>
+      <div class="numpad">
+        <button class="num-key" onclick="numKey('1')">1</button><button class="num-key" onclick="numKey('2')">2</button><button class="num-key" onclick="numKey('3')">3</button>
+        <button class="num-key" onclick="numKey('4')">4</button><button class="num-key" onclick="numKey('5')">5</button><button class="num-key" onclick="numKey('6')">6</button>
+        <button class="num-key" onclick="numKey('7')">7</button><button class="num-key" onclick="numKey('8')">8</button><button class="num-key" onclick="numKey('9')">9</button>
+        <button class="num-key" onclick="numKey('000')">000</button><button class="num-key" onclick="numKey('0')">0</button><button class="num-key del" onclick="numKey('del')">⌫</button>
+      </div>
+      <div class="field-label">Категория</div>
+      <div class="cat-grid" id="cat-grid"></div>
+      <div class="field"><label class="field-label">Дата</label><input type="date" class="field-input" id="add-date"></div>
+      <div class="field"><label class="field-label">Комментарий</label><input type="text" class="field-input" id="add-note" placeholder="например: продукты" maxlength="80"></div>
+      <button class="btn-primary" onclick="saveTransaction()">Сохранить</button>
+      <button class="btn-danger" id="btn-delete-tx" onclick="deleteCurrentTx()" style="display:none">Удалить операцию</button>
+    </div>
+  </div>
+</div>
+
+<!-- Категория -->
+<div class="modal-backdrop" id="modal-category">
+  <div class="modal">
+    <div class="modal-header"><h2 id="cat-modal-title">Новая категория</h2><button class="modal-close" onclick="closeModal('modal-category')">✕</button></div>
+    <div class="modal-body">
+      <div class="field"><label class="field-label">Название</label><input type="text" class="field-input" id="cat-name-input" placeholder="Например: Спорт" maxlength="30"></div>
+      <div class="field"><label class="field-label">Иконка</label><div class="cat-grid" id="emoji-grid"></div></div>
+      <button class="btn-primary" onclick="saveCategory()">Сохранить</button>
+      <button class="btn-danger" id="cat-delete-btn" onclick="deleteCategory()" style="display:none">Удалить категорию</button>
+    </div>
+  </div>
+</div>
+
+<!-- Регулярный платёж -->
+<div class="modal-backdrop" id="modal-recurring">
+  <div class="modal">
+    <div class="modal-header"><h2 id="rec-modal-title">Регулярный платёж</h2><button class="modal-close" onclick="closeModal('modal-recurring')">✕</button></div>
+    <div class="modal-body">
+      <div class="field"><label class="field-label">Название</label><input type="text" class="field-input" id="rec-name" placeholder="Аренда квартиры" maxlength="40"></div>
+      <div class="field"><label class="field-label">Сумма (₸)</label><input type="number" class="field-input num" id="rec-amount" placeholder="0" inputmode="numeric"></div>
+      <div class="field"><label class="field-label">День месяца</label><input type="number" class="field-input num" id="rec-day" min="1" max="28" placeholder="1–28" inputmode="numeric"></div>
+      <div class="field"><label class="field-label">Категория</label><select class="field-select" id="rec-category"></select></div>
+      <button class="btn-primary" onclick="saveRecurring()">Сохранить</button>
+      <button class="btn-danger" id="rec-delete-btn" onclick="deleteRecurring()" style="display:none">Удалить</button>
+    </div>
+  </div>
+</div>
+
+<!-- Кредит -->
+<div class="modal-backdrop" id="modal-credit">
+  <div class="modal">
+    <div class="modal-header"><h2 id="credit-modal-title">Новый кредит</h2><button class="modal-close" onclick="closeModal('modal-credit')">✕</button></div>
+    <div class="modal-body">
+      <div class="field"><label class="field-label">Банк</label>
+        <select class="field-select" id="credit-bank">
+          <option value="forte">Forte Bank</option>
+          <option value="kaspi">Kaspi Bank</option>
+          <option value="halyk">Народный банк</option>
+          <option value="other">Другой</option>
+        </select>
+      </div>
+      <div class="field"><label class="field-label">Название</label><input type="text" class="field-input" id="credit-name" placeholder="Потребительский" maxlength="50"></div>
+      <div class="field"><label class="field-label">Сумма (₸)</label><input type="number" class="field-input num" id="credit-amount" placeholder="0" inputmode="numeric"></div>
+      <div class="field"><label class="field-label">Ставка (% годовых)</label><input type="number" class="field-input num" id="credit-rate" step="0.1" placeholder="37.9" inputmode="decimal"></div>
+      <div class="field"><label class="field-label">Дата выдачи</label><input type="date" class="field-input" id="credit-startdate"></div>
+      <div class="field"><label class="field-label">Срок (мес.)</label><input type="number" class="field-input num" id="credit-months" placeholder="60" inputmode="numeric"></div>
+      <div style="background:var(--surface); border:1px solid var(--border); border-radius:12px; overflow:hidden; margin-bottom:16px;">
+        <div style="display:grid; grid-template-columns:1fr 1fr;">
+          <button class="type-btn active income" id="btn-schedule-auto" onclick="setScheduleMode('auto')" style="border-radius:0; padding:10px;">📄 PDF</button>
+          <button class="type-btn" id="btn-schedule-manual" onclick="setScheduleMode('manual')" style="border-radius:0; padding:10px;">✏️ Вручную</button>
+        </div>
+      </div>
+      <div id="schedule-auto-block">
+        <p style="font-size:13px; color:var(--text-secondary); margin:0 0 12px">Загрузите PDF из Forte или Народного — данные заполнятся автоматически.</p>
+        <button class="btn-secondary" onclick="document.getElementById('pdf-upload').click()">📄 Выбрать PDF</button>
+        <input type="file" id="pdf-upload" accept=".pdf" style="display:none" onchange="handlePdfUpload(event)">
+        <div id="pdf-status" style="font-size:13px; color:var(--accent); margin-top:10px; display:none"></div>
+      </div>
+      <div id="schedule-manual-block" style="display:none">
+        <div class="field"><label class="field-label">Текущий остаток долга (₸)</label><input type="number" class="field-input num" id="credit-balance" placeholder="0" inputmode="numeric"></div>
+        <div class="field"><label class="field-label">Ежемесячный платёж (₸)</label><input type="number" class="field-input num" id="credit-payment" placeholder="0" inputmode="numeric"></div>
+        <div class="field"><label class="field-label">Дата следующего платежа</label><input type="date" class="field-input" id="credit-nextdate"></div>
+      </div>
+      <button class="btn-primary" style="margin-top:16px" onclick="saveCredit()">Сохранить</button>
+      <button class="btn-danger" id="credit-delete-btn" onclick="deleteCredit()" style="display:none">Удалить кредит</button>
+    </div>
+  </div>
+</div>
+
+<!-- Платёж -->
+<div class="modal-backdrop" id="modal-payment">
+  <div class="modal">
+    <div class="modal-header"><h2 id="payment-modal-title">Платёж</h2><button class="modal-close" onclick="closeModal('modal-payment')">✕</button></div>
+    <div class="modal-body" id="payment-modal-body"></div>
+  </div>
+</div>
+
+<!-- ЦЕЛЬ — добавление / редактирование -->
+<div class="modal-backdrop" id="modal-goal">
+  <div class="modal">
+    <div class="modal-header"><h2 id="goal-modal-title">Новая цель</h2><button class="modal-close" onclick="closeModal('modal-goal')">✕</button></div>
+    <div class="modal-body">
+      <div class="field"><label class="field-label">Название</label><input type="text" class="field-input" id="goal-name" placeholder="Например: Машина" maxlength="40"></div>
+      <div class="field"><label class="field-label">Иконка</label><div class="cat-grid" id="goal-emoji-grid"></div></div>
+      <div class="field"><label class="field-label">Сумма цели (₸)</label><input type="number" class="field-input num" id="goal-target" placeholder="0" inputmode="numeric"></div>
+      <div class="field"><label class="field-label">Уже накоплено (₸)</label><input type="number" class="field-input num" id="goal-current" placeholder="0" inputmode="numeric"></div>
+      <div class="field"><label class="field-label">Срок <span style="color:var(--text-tertiary)">(необязательно)</span></label><input type="date" class="field-input" id="goal-deadline"></div>
+      <div class="field">
+        <label class="field-label">Приоритет</label>
+        <div class="segmented" id="goal-priority-seg">
+          <button data-pri="low" onclick="setGoalPriority('low')">Низкий</button>
+          <button data-pri="med" class="active" onclick="setGoalPriority('med')">Средний</button>
+          <button data-pri="high" onclick="setGoalPriority('high')">Высокий</button>
+        </div>
+      </div>
+      <button class="btn-primary" onclick="saveGoal()">Сохранить</button>
+      <button class="btn-danger" id="goal-delete-btn" onclick="deleteGoal()" style="display:none">Удалить цель</button>
+    </div>
+  </div>
+</div>
+
+<!-- ПОПОЛНЕНИЕ ЦЕЛИ -->
+<div class="modal-backdrop" id="modal-goal-deposit">
+  <div class="modal">
+    <div class="modal-header"><h2>Пополнить цель</h2><button class="modal-close" onclick="closeModal('modal-goal-deposit')">✕</button></div>
+    <div class="modal-body">
+      <div id="goal-deposit-info" style="text-align:center; margin-bottom:20px;"></div>
+      <div class="amount-display empty num" id="deposit-amount-display"><span id="deposit-amount-value">0</span><span class="amount-currency">₸</span></div>
+      <div class="numpad">
+        <button class="num-key" onclick="depositKey('1')">1</button><button class="num-key" onclick="depositKey('2')">2</button><button class="num-key" onclick="depositKey('3')">3</button>
+        <button class="num-key" onclick="depositKey('4')">4</button><button class="num-key" onclick="depositKey('5')">5</button><button class="num-key" onclick="depositKey('6')">6</button>
+        <button class="num-key" onclick="depositKey('7')">7</button><button class="num-key" onclick="depositKey('8')">8</button><button class="num-key" onclick="depositKey('9')">9</button>
+        <button class="num-key" onclick="depositKey('000')">000</button><button class="num-key" onclick="depositKey('0')">0</button><button class="num-key del" onclick="depositKey('del')">⌫</button>
+      </div>
+      <button class="btn-primary" onclick="saveDeposit()">Пополнить</button>
+      <button class="btn-secondary" onclick="saveDeposit(true)">Снять с цели</button>
+    </div>
+  </div>
+</div>
+
+<!-- УСТАНОВКА / СМЕНА ПИН -->
+<div class="modal-backdrop" id="modal-set-pin">
+  <div class="modal">
+    <div class="modal-header"><h2 id="set-pin-title">Установить ПИН</h2><button class="modal-close" onclick="closeModal('modal-set-pin')">✕</button></div>
+    <div class="modal-body">
+      <p style="font-size:14px; color:var(--text-secondary); margin:0 0 20px; text-align:center;" id="set-pin-hint">Придумайте 4-значный ПИН-код</p>
+      <div class="pin-dots" id="setpin-dots" style="justify-content:center; margin-bottom:24px;">
+        <div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div>
+      </div>
+      <div class="numpad" style="max-width:280px; margin:0 auto;">
+        <button class="num-key" onclick="setPinKey('1')">1</button><button class="num-key" onclick="setPinKey('2')">2</button><button class="num-key" onclick="setPinKey('3')">3</button>
+        <button class="num-key" onclick="setPinKey('4')">4</button><button class="num-key" onclick="setPinKey('5')">5</button><button class="num-key" onclick="setPinKey('6')">6</button>
+        <button class="num-key" onclick="setPinKey('7')">7</button><button class="num-key" onclick="setPinKey('8')">8</button><button class="num-key" onclick="setPinKey('9')">9</button>
+        <button class="num-key" style="visibility:hidden">.</button>
+        <button class="num-key" onclick="setPinKey('0')">0</button>
+        <button class="num-key del" onclick="setPinKey('del')">⌫</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PDF оверлей загрузки -->
+<div class="pdf-overlay" id="pdf-overlay">
+  <div class="pdf-spinner"></div>
+  <div class="pdf-overlay-title" id="pdf-overlay-title">Читаю PDF...</div>
+  <div class="pdf-overlay-sub" id="pdf-overlay-sub">Извлекаю текстовый слой</div>
+  <div class="pdf-overlay-progress"><div class="pdf-overlay-bar" id="pdf-overlay-bar"></div></div>
+</div>
+
+<!-- Скрытый canvas для OCR -->
+<canvas id="ocr-canvas" style="display:none"></canvas>
+
+<input type="file" id="import-file" accept=".json" style="display:none" onchange="handleImport(event)">
+<div class="toast" id="toast"></div>
+
+<script>
+/* =============================================
+   ХРАНИЛИЩЕ
+   ============================================= */
+const STORAGE_KEY = 'budget_app_v3';
+const SETTINGS_KEY = 'budget_settings_v3';
+
+const DEFAULT_CATEGORIES = {
+  expense: [
+    {id:'c_food',name:'Продукты',icon:'🛒'},{id:'c_util',name:'Коммуналка',icon:'💡'},
+    {id:'c_car',name:'Авто',icon:'🚗'},{id:'c_fun',name:'Развлечения',icon:'🎉'},
+    {id:'c_kids',name:'Дети',icon:'🧸'},{id:'c_home',name:'Дом',icon:'🏠'},
+    {id:'c_health',name:'Здоровье',icon:'💊'},{id:'c_other',name:'Прочее',icon:'📦'}
+  ],
+  income: [
+    {id:'i_salary',name:'Зарплата',icon:'💼'},{id:'i_bonus',name:'Премия',icon:'🎁'},
+    {id:'i_freelance',name:'Подработка',icon:'💻'},{id:'i_other',name:'Прочее',icon:'💰'}
+  ]
+};
+
+const EMOJI_LIST = ['🛒','💡','🚗','🎉','🧸','🏠','💊','📦','💼','🎁','💻','💰','🍔','☕','✈️','🎓','📱','🏋️','🐾','🎨','🛍️','⛽','🚌','🏥','🧾','🍷','📚','🎵'];
+const GOAL_EMOJI = ['🚗','✈️','🏠','📱','💻','🛋️','💍','🎓','💰','🎁','📷','🏍️','⌚','🎮','👶','🐕','💼','🏖️','🛠️','🎸'];
+
+const BANK_NAMES = {forte:'Forte Bank', kaspi:'Kaspi Bank', halyk:'Народный банк', other:'Банк'};
+const BANK_COLORS = {forte:'#8B1A5A', kaspi:'#E31837', halyk:'#1B4F8A', other:'#0F5C5B'};
+
+const FORTE_SCHEDULE = [{"n":1,"date":"03/03/2025","total":3769.34,"interest":3158.33,"principal":611.01,"balance":99388.99},{"n":2,"date":"01/04/2025","total":3769.34,"interest":3034.4,"principal":734.94,"balance":98654.05},{"n":3,"date":"02/05/2025","total":3769.34,"interest":3219.68,"principal":549.66,"balance":98104.39},{"n":4,"date":"02/06/2025","total":3769.34,"interest":3201.75,"principal":567.59,"balance":97536.8},{"n":5,"date":"01/07/2025","total":3769.34,"interest":2977.85,"principal":791.49,"balance":96745.31},{"n":6,"date":"01/08/2025","total":3769.34,"interest":3157.39,"principal":611.95,"balance":96133.36},{"n":7,"date":"02/09/2025","total":3566.93,"interest":3036.22,"principal":530.71,"balance":95602.65},{"n":8,"date":"01/10/2025","total":850.54,"interest":0.0,"principal":850.54,"balance":94752.11},{"n":9,"date":"03/11/2025","total":477.49,"interest":0.0,"principal":477.49,"balance":94274.62},{"n":10,"date":"01/12/2025","total":990.33,"interest":0.0,"principal":990.33,"balance":93284.29},{"n":11,"date":"05/01/2026","total":332.07,"interest":0.0,"principal":332.07,"balance":92952.22},{"n":12,"date":"02/02/2026","total":1029.32,"interest":0.0,"principal":1029.32,"balance":91922.9},{"n":13,"date":"02/03/2026","total":1059.66,"interest":0.0,"principal":1059.66,"balance":90863.24},{"n":14,"date":"01/04/2026","total":899.58,"interest":0.0,"principal":899.58,"balance":89963.66},{"n":15,"date":"04/05/2026","total":643.85,"interest":0.0,"principal":643.85,"balance":89319.81},{"n":16,"date":"01/06/2026","total":1136.39,"interest":0.0,"principal":1136.39,"balance":88183.42},{"n":17,"date":"01/07/2026","total":3769.34,"interest":2785.13,"principal":984.21,"balance":87199.21},{"n":18,"date":"03/08/2026","total":3769.34,"interest":3029.45,"principal":739.89,"balance":86459.32},{"n":19,"date":"01/09/2026","total":3769.34,"interest":2639.65,"principal":1129.69,"balance":85329.63},{"n":20,"date":"01/10/2026","total":3769.34,"interest":2694.99,"principal":1074.35,"balance":84255.28},{"n":21,"date":"02/11/2026","total":3769.34,"interest":2838.47,"principal":930.87,"balance":83324.41},{"n":22,"date":"01/12/2026","total":3769.34,"interest":2543.94,"principal":1225.4,"balance":82099.01},{"n":23,"date":"04/01/2027","total":3769.34,"interest":2938.69,"principal":830.65,"balance":81268.36},{"n":24,"date":"01/02/2027","total":3769.34,"interest":2395.61,"principal":1373.73,"balance":79894.63},{"n":25,"date":"01/03/2027","total":3769.34,"interest":2355.12,"principal":1414.22,"balance":78480.41},{"n":26,"date":"01/04/2027","total":3769.34,"interest":2561.3,"principal":1208.04,"balance":77272.37},{"n":27,"date":"03/05/2027","total":3769.34,"interest":2603.22,"principal":1166.12,"balance":76106.25},{"n":28,"date":"01/06/2027","total":3769.34,"interest":2323.57,"principal":1445.77,"balance":74660.48},{"n":29,"date":"01/07/2027","total":3769.34,"interest":2358.03,"principal":1411.31,"balance":73249.17},{"n":30,"date":"02/08/2027","total":3769.34,"interest":2467.68,"principal":1301.66,"balance":71947.51},{"n":31,"date":"01/09/2027","total":3769.34,"interest":2272.34,"principal":1497.0,"balance":70450.51},{"n":32,"date":"01/10/2027","total":3769.34,"interest":2225.06,"principal":1544.28,"balance":68906.23},{"n":33,"date":"01/11/2027","total":3769.34,"interest":2248.83,"principal":1520.51,"balance":67385.72},{"n":34,"date":"01/12/2027","total":3769.34,"interest":2128.27,"principal":1641.07,"balance":65744.65},{"n":35,"date":"03/01/2028","total":3769.34,"interest":2284.08,"principal":1485.26,"balance":64259.39},{"n":36,"date":"01/02/2028","total":3769.34,"interest":1961.87,"principal":1807.47,"balance":62451.92},{"n":37,"date":"01/03/2028","total":3769.34,"interest":1906.69,"principal":1862.65,"balance":60589.27},{"n":38,"date":"03/04/2028","total":3769.34,"interest":2104.97,"principal":1664.37,"balance":58924.9},{"n":39,"date":"02/05/2028","total":3769.34,"interest":1799.01,"principal":1970.33,"balance":56954.57},{"n":40,"date":"01/06/2028","total":3769.34,"interest":1798.82,"principal":1970.52,"balance":54984.05},{"n":41,"date":"03/07/2028","total":3769.34,"interest":1852.35,"principal":1916.99,"balance":53067.06},{"n":42,"date":"01/08/2028","total":3769.34,"interest":1620.17,"principal":2149.17,"balance":50917.89},{"n":43,"date":"01/09/2028","total":3769.34,"interest":1661.76,"principal":2107.58,"balance":48810.31},{"n":44,"date":"02/10/2028","total":3769.34,"interest":1592.98,"principal":2176.36,"balance":46633.95},{"n":45,"date":"01/11/2028","total":3769.34,"interest":1472.86,"principal":2296.48,"balance":44337.47},{"n":46,"date":"01/12/2028","total":3769.34,"interest":1400.33,"principal":2369.01,"balance":41968.46},{"n":47,"date":"03/01/2029","total":3769.34,"interest":1458.05,"principal":2311.29,"balance":39657.17},{"n":48,"date":"01/02/2029","total":3769.34,"interest":1210.76,"principal":2558.58,"balance":37098.59},{"n":49,"date":"01/03/2029","total":3769.34,"interest":1093.58,"principal":2675.76,"balance":34422.83},{"n":50,"date":"02/04/2029","total":3769.34,"interest":1159.67,"principal":2609.67,"balance":31813.16},{"n":51,"date":"02/05/2029","total":3769.34,"interest":1004.77,"principal":2764.57,"balance":29048.59},{"n":52,"date":"01/06/2029","total":3769.34,"interest":917.45,"principal":2851.89,"balance":26196.7},{"n":53,"date":"02/07/2029","total":3769.34,"interest":854.96,"principal":2914.38,"balance":23282.32},{"n":54,"date":"01/08/2029","total":3769.34,"interest":735.33,"principal":3034.01,"balance":20248.31},{"n":55,"date":"03/09/2029","total":3769.34,"interest":703.46,"principal":3065.88,"balance":17182.43},{"n":56,"date":"01/10/2029","total":3769.34,"interest":506.5,"principal":3262.84,"balance":13919.59},{"n":57,"date":"01/11/2029","total":3769.34,"interest":454.28,"principal":3315.06,"balance":10604.53},{"n":58,"date":"03/12/2029","total":3769.34,"interest":357.25,"principal":3412.09,"balance":7192.44},{"n":59,"date":"03/01/2030","total":3769.34,"interest":234.73,"principal":3534.61,"balance":3657.83},{"n":60,"date":"01/02/2030","total":3769.49,"interest":111.66,"principal":3657.83,"balance":0.0}];
+
+/* =============================================
+   STATE
+   ============================================= */
+let state = loadState();
+let settings = loadSettings();
+let editing = { tx:null, category:null, recurring:null, credit:null, goal:null, type:'expense', amount:'', categoryId:null, emoji:'📦', categoryType:'expense', goalEmoji:'🎯', goalPriority:'med', depositGoalId:null, depositAmount:'' };
+let scheduleMode = 'auto';
+let parsedPdfSchedule = null;
+
+function loadState() {
+  try { const r=localStorage.getItem(STORAGE_KEY); if(r) return JSON.parse(r); } catch(e) {}
+  return { transactions:[], categories: JSON.parse(JSON.stringify(DEFAULT_CATEGORIES)), recurring:[], credits:[], goals:[] };
+}
+function saveState() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e) { showToast('Ошибка сохранения'); } }
+
+function loadSettings() {
+  try { const r=localStorage.getItem(SETTINGS_KEY); if(r) return JSON.parse(r); } catch(e) {}
+  return { theme:'auto', pinHash:null };
+}
+function saveSettings() { try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch(e) {} }
+
+/* =============================================
+   ТЕМА
+   ============================================= */
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  // Цвет статус-бара
+  const meta = document.getElementById('meta-theme-color');
+  const isDark = theme==='dark' || (theme==='auto' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  meta.setAttribute('content', isDark ? '#0F0F0E' : '#0F5C5B');
+}
+function setTheme(theme) {
+  settings.theme = theme;
+  saveSettings();
+  applyTheme(theme);
+  updateThemeButtons();
+  // Перерисовать графики, чтобы их цвета обновились
+  if(pieChart||barChart) { renderHistoryCharts(); }
+  if(creditCharts && Object.keys(creditCharts).length) renderCredits();
+}
+function updateThemeButtons() {
+  document.querySelectorAll('#theme-segmented button').forEach(b => {
+    b.classList.toggle('active', b.dataset.theme === settings.theme);
+  });
+}
+
+/* =============================================
+   ПИН-КОД
+   ============================================= */
+let pinInput = '';
+let setPinStage = 'first'; // 'first' | 'confirm'
+let firstPinAttempt = '';
+let setPinInput = '';
+
+async function hashPin(pin) {
+  const buf = new TextEncoder().encode(pin + '_budget_salt');
+  const hash = await crypto.subtle.digest('SHA-256', buf);
+  return Array.from(new Uint8Array(hash)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+function showLockScreen() {
+  document.getElementById('lock-screen').classList.add('active');
+  document.getElementById('app').style.display = 'none';
+  document.querySelector('.tabbar').style.display = 'none';
+  pinInput = '';
+  updatePinDots('pin-dots', pinInput.length);
+  document.getElementById('pin-error').textContent = '';
+}
+function hideLockScreen() {
+  document.getElementById('lock-screen').classList.remove('active');
+  document.getElementById('app').style.display = '';
+  document.querySelector('.tabbar').style.display = '';
+}
+function updatePinDots(id, count) {
+  document.querySelectorAll(`#${id} .pin-dot`).forEach((d,i) => d.classList.toggle('filled', i < count));
+}
+async function pinKey(key) {
+  if(key === 'del') {
+    pinInput = pinInput.slice(0, -1);
+  } else if(pinInput.length < 4) {
+    pinInput += key;
+  }
+  updatePinDots('pin-dots', pinInput.length);
+  document.getElementById('pin-error').textContent = '';
+
+  if(pinInput.length === 4) {
+    const hash = await hashPin(pinInput);
+    if(hash === settings.pinHash) {
+      hideLockScreen();
+      pinInput = '';
+    } else {
+      const dots = document.getElementById('pin-dots');
+      dots.classList.add('error');
+      document.getElementById('pin-error').textContent = 'Неверный ПИН';
+      setTimeout(() => {
+        dots.classList.remove('error');
+        pinInput = '';
+        updatePinDots('pin-dots', 0);
+      }, 500);
+    }
+  }
+}
+function forgotPin() {
+  if(!confirm('Восстановление ПИН-кода удалит все данные приложения. Продолжить?')) return;
+  if(!confirm('Точно? Все операции, кредиты, цели будут стёрты безвозвратно.')) return;
+  localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem(SETTINGS_KEY);
+  location.reload();
+}
+
+// Установка ПИН-кода
+function togglePin() {
+  if(settings.pinHash) {
+    if(!confirm('Отключить ПИН-код? Приложение будет открываться без пароля.')) return;
+    settings.pinHash = null;
+    saveSettings();
+    updatePinUI();
+    showToast('ПИН-код отключён');
+  } else {
+    openSetPinModal();
+  }
+}
+function changePin() {
+  openSetPinModal();
+}
+function openSetPinModal() {
+  setPinStage = 'first';
+  firstPinAttempt = '';
+  setPinInput = '';
+  document.getElementById('set-pin-title').textContent = settings.pinHash ? 'Сменить ПИН' : 'Установить ПИН';
+  document.getElementById('set-pin-hint').textContent = 'Придумайте 4-значный ПИН-код';
+  updatePinDots('setpin-dots', 0);
+  openModal('modal-set-pin');
+}
+async function setPinKey(key) {
+  if(key === 'del') {
+    setPinInput = setPinInput.slice(0, -1);
+  } else if(setPinInput.length < 4) {
+    setPinInput += key;
+  }
+  updatePinDots('setpin-dots', setPinInput.length);
+
+  if(setPinInput.length === 4) {
+    if(setPinStage === 'first') {
+      firstPinAttempt = setPinInput;
+      setPinInput = '';
+      setPinStage = 'confirm';
+      document.getElementById('set-pin-hint').textContent = 'Повторите ПИН-код';
+      setTimeout(() => updatePinDots('setpin-dots', 0), 200);
+    } else {
+      if(setPinInput === firstPinAttempt) {
+        settings.pinHash = await hashPin(setPinInput);
+        saveSettings();
+        closeModal('modal-set-pin');
+        updatePinUI();
+        showToast('ПИН-код установлен');
+      } else {
+        const dots = document.getElementById('setpin-dots');
+        dots.classList.add('error');
+        document.getElementById('set-pin-hint').textContent = 'Не совпадает. Попробуйте снова';
+        setTimeout(() => {
+          dots.classList.remove('error');
+          setPinInput = '';
+          firstPinAttempt = '';
+          setPinStage = 'first';
+          document.getElementById('set-pin-hint').textContent = 'Придумайте 4-значный ПИН-код';
+          updatePinDots('setpin-dots', 0);
+        }, 700);
+      }
+    }
+  }
+}
+function updatePinUI() {
+  document.getElementById('pin-status').textContent = settings.pinHash ? 'Вкл' : 'Выкл';
+  document.getElementById('change-pin-row').style.display = settings.pinHash ? '' : 'none';
+}
+
+/* =============================================
+   ФОРМАТ
+   ============================================= */
+function fmt(n, showCurrency=true) { return new Intl.NumberFormat('ru-RU').format(Math.abs(Math.round(n))) + (showCurrency?' ₸':''); }
+function fmtDate(iso, withYear=false) {
+  const d = new Date(iso);
+  return d.toLocaleDateString('ru-RU', {day:'numeric',month:'long',...(withYear?{year:'numeric'}:{})});
+}
+function fmtDateGroup(iso) {
+  const d=new Date(iso), today=new Date(); today.setHours(0,0,0,0);
+  const yest=new Date(today); yest.setDate(yest.getDate()-1);
+  const t=new Date(d); t.setHours(0,0,0,0);
+  if(t.getTime()===today.getTime()) return 'Сегодня';
+  if(t.getTime()===yest.getTime()) return 'Вчера';
+  return fmtDate(iso, d.getFullYear()!==today.getFullYear());
+}
+function parseScheduleDate(s) { const [d,m,y]=s.split('/'); return new Date(+y, +m-1, +d); }
+function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function findCategory(id) { for(const t of ['expense','income']) { const f=state.categories[t].find(c=>c.id===id); if(f) return {...f,type:t}; } return null; }
+
+/* =============================================
+   НАВИГАЦИЯ
+   ============================================= */
+function switchTab(name) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('screen-'+name).classList.add('active');
+  document.querySelector(`.tab[data-screen="${name}"]`).classList.add('active');
+  if(name==='home') renderHome();
+  if(name==='history') renderHistoryScreen();
+  if(name==='goals') renderGoals();
+  if(name==='credits') renderCredits();
+  if(name==='settings') renderSettings();
+}
+
+/* =============================================
+   ГЛАВНАЯ
+   ============================================= */
+function renderHome() {
+  const today=new Date();
+  document.getElementById('today-label').textContent = today.toLocaleDateString('ru-RU',{weekday:'long',day:'numeric',month:'long'});
+  const balance = state.transactions.reduce((s,t)=>s+(t.type==='income'?t.amount:-t.amount),0);
+  const monthStart=new Date(today.getFullYear(),today.getMonth(),1);
+  const mTx = state.transactions.filter(t=>new Date(t.date)>=monthStart);
+  document.getElementById('balance-amount').textContent = fmt(balance);
+  document.getElementById('month-income').textContent = fmt(mTx.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0));
+  document.getElementById('month-expense').textContent = fmt(mTx.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0));
+  renderHomeGoals();
+  renderHomeCredits();
+  renderUpcoming();
+  const recent=[...state.transactions].sort((a,b)=>b.date.localeCompare(a.date)||b.createdAt-a.createdAt).slice(0,5);
+  renderTxList('recent-tx',recent);
+}
+
+function renderHomeGoals() {
+  const sec=document.getElementById('home-goals-section');
+  const list=document.getElementById('home-goals-list');
+  if(!state.goals||!state.goals.length){sec.style.display='none';return;}
+  sec.style.display='';
+  // Берём топ-3 по приоритету
+  const sorted=[...state.goals].sort((a,b)=>{const p={high:0,med:1,low:2};return p[a.priority]-p[b.priority];}).slice(0,2);
+  list.innerHTML=sorted.map(g => goalCardHtml(g, true)).join('');
+}
+
+function renderHomeCredits() {
+  const sec=document.getElementById('home-credits-section');
+  const list=document.getElementById('home-credits-list');
+  if(!state.credits||!state.credits.length){sec.style.display='none';return;}
+  sec.style.display='';
+  list.innerHTML=state.credits.map(cr=>{
+    const {nextPayment,pct}=getCreditStats(cr);
+    const color=BANK_COLORS[cr.bank]||'#0F5C5B';
+    return `<div class="tx-list" style="margin-bottom:10px;" onclick="switchTab('credits')">
+      <div class="tx-item">
+        <div class="tx-icon" style="background:${color}20; font-size:16px;">🏦</div>
+        <div class="tx-content">
+          <div class="tx-title">${escapeHtml(cr.name)}</div>
+          <div class="tx-subtitle">${BANK_NAMES[cr.bank]||cr.bank} · ${pct}% выплачено${nextPayment?' · след. '+nextPayment.date:''}</div>
+        </div>
+        <div class="tx-amount expense num">${nextPayment?fmt(nextPayment.total):'✓'}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderUpcoming() {
+  const sec=document.getElementById('upcoming-section');
+  const container=document.getElementById('upcoming-list');
+  if(!state.recurring||!state.recurring.length){sec.style.display='none';return;}
+  const today=new Date(); today.setHours(0,0,0,0);
+  const horizon=new Date(today); horizon.setDate(horizon.getDate()+14);
+  const up=state.recurring.map(r=>({...r,next:nextOccurrence(r.day,today)})).filter(r=>r.next<=horizon).sort((a,b)=>a.next-b.next);
+  if(!up.length){sec.style.display='none';return;}
+  sec.style.display='';
+  container.innerHTML=up.slice(0,3).map(r=>{
+    const cat=findCategory(r.categoryId);
+    const d=Math.round((r.next-today)/86400000);
+    const lbl=d===0?'сегодня':d===1?'завтра':`через ${d} д.`;
+    return `<div class="tx-item"><div class="tx-icon">${cat?cat.icon:'📌'}</div><div class="tx-content"><div class="tx-title">${escapeHtml(r.name)}</div><div class="tx-subtitle">${lbl} · ${cat?cat.name:'без категории'}</div></div><div class="tx-amount expense num">${fmt(r.amount)}</div></div>`;
+  }).join('');
+}
+function nextOccurrence(day, from) {
+  const d=new Date(from); d.setHours(0,0,0,0);
+  if(d.getDate()<=day){const c=new Date(d.getFullYear(),d.getMonth(),day);if(c>=d)return c;}
+  return new Date(d.getFullYear(),d.getMonth()+1,day);
+}
+function renderTxList(id, txs) {
+  const el=document.getElementById(id);
+  if(!txs.length){el.innerHTML='<div class="empty"><div class="empty-title">Пока пусто</div><div class="empty-hint">Добавьте первую операцию</div></div>';return;}
+  el.innerHTML='<div class="tx-list">'+txs.map(tx=>{
+    const cat=findCategory(tx.categoryId);
+    const sign=tx.type==='income'?'+':'−';
+    return `<div class="tx-item" onclick="editTransaction('${tx.id}')"><div class="tx-icon">${cat?cat.icon:'📦'}</div><div class="tx-content"><div class="tx-title">${cat?cat.name:'Без категории'}</div><div class="tx-subtitle">${tx.note?escapeHtml(tx.note)+' · ':''}${fmtDateGroup(tx.date)}</div></div><div class="tx-amount ${tx.type} num">${sign}${fmt(tx.amount,false)} ₸</div></div>`;
+  }).join('')+'</div>';
+}
+
+/* =============================================
+   ЦЕЛИ
+   ============================================= */
+function calcGoalStats(g) {
+  const pct = g.target > 0 ? Math.min(100, Math.round(g.current / g.target * 100)) : 0;
+  const remaining = Math.max(0, g.target - g.current);
+  let monthsLeft = null, monthlyNeeded = null, daysLeft = null;
+  if(g.deadline) {
+    const today=new Date(); today.setHours(0,0,0,0);
+    const dl=new Date(g.deadline); dl.setHours(0,0,0,0);
+    daysLeft=Math.round((dl-today)/86400000);
+    monthsLeft = Math.max(0.1, daysLeft/30);
+    monthlyNeeded = remaining / monthsLeft;
+  }
+  return { pct, remaining, monthsLeft, monthlyNeeded, daysLeft, complete: pct >= 100 };
+}
+
+function goalCardHtml(g, mini=false) {
+  const s = calcGoalStats(g);
+  const priorityLabel = {high:'Важная', med:'Средняя', low:'Низкая'};
+  let deadlineStr = '';
+  let deadlineClass = '';
+  if(g.deadline && !s.complete) {
+    if(s.daysLeft < 0) { deadlineStr = `Просрочено на ${Math.abs(s.daysLeft)} д.`; deadlineClass='due'; }
+    else if(s.daysLeft === 0) { deadlineStr = 'Сегодня'; deadlineClass='due'; }
+    else if(s.daysLeft <= 30) { deadlineStr = `Осталось ${s.daysLeft} д.`; }
+    else if(s.daysLeft <= 365) { deadlineStr = `Осталось ~${Math.round(s.daysLeft/30)} мес.`; }
+    else { deadlineStr = `Срок: ${fmtDate(g.deadline, true)}`; }
+  } else if(s.complete) {
+    deadlineStr = '✅ Цель достигнута!';
+  }
+  return `
+  <div class="goal-card" onclick="${mini?`switchTab('goals')`:`openGoalDeposit('${g.id}')`}">
+    <div class="goal-header">
+      <div class="goal-icon">${g.icon}</div>
+      <div class="goal-info">
+        <div class="goal-name">${escapeHtml(g.name)}</div>
+        ${deadlineStr?`<div class="goal-deadline ${deadlineClass}">${deadlineStr}</div>`:''}
+      </div>
+      ${!mini?`<div class="goal-priority ${g.priority}">${priorityLabel[g.priority]}</div>`:''}
+    </div>
+    <div class="goal-progress-line">
+      <span class="goal-progress-current num">${fmt(g.current)}</span>
+      <span class="goal-progress-target num">из ${fmt(g.target)}</span>
+    </div>
+    <div class="goal-progress-bar">
+      <div class="goal-progress-fill ${s.complete?'complete':''}" style="width:${s.pct}%"></div>
+    </div>
+    <div class="goal-meta">
+      <span>${s.pct}% накоплено</span>
+      ${!s.complete && s.monthlyNeeded !== null ? `<span class="goal-meta-monthly">≈ ${fmt(s.monthlyNeeded)} / мес</span>` : `<span>Осталось ${fmt(s.remaining)}</span>`}
+    </div>
+    ${!mini?`<div style="display:flex; gap:8px; margin-top:14px;">
+      <button class="btn-secondary" style="margin:0; flex:1; padding:10px;" onclick="event.stopPropagation(); openGoalDeposit('${g.id}')">💰 Пополнить</button>
+      <button class="btn-secondary" style="margin:0; flex:0.5; padding:10px;" onclick="event.stopPropagation(); editGoalModal('${g.id}')">✏️</button>
+    </div>`:''}
+  </div>`;
+}
+
+function renderGoals() {
+  const list = document.getElementById('goals-list');
+  if(!state.goals || !state.goals.length) {
+    list.innerHTML = '<div class="empty" style="padding:60px 20px;"><div class="empty-title">Целей нет</div><div class="empty-hint">Добавьте цель: машина, отпуск, ремонт, накопления…</div></div>';
+    return;
+  }
+  // Сортировка: незавершённые сначала, по приоритету, потом завершённые
+  const sorted = [...state.goals].sort((a,b)=>{
+    const ac=calcGoalStats(a).complete, bc=calcGoalStats(b).complete;
+    if(ac!==bc) return ac?1:-1;
+    const p={high:0,med:1,low:2};
+    return p[a.priority]-p[b.priority];
+  });
+  list.innerHTML = sorted.map(g => goalCardHtml(g, false)).join('');
+}
+
+function openAddGoalModal() {
+  editing.goal = null;
+  editing.goalEmoji = '🎯';
+  editing.goalPriority = 'med';
+  document.getElementById('goal-modal-title').textContent = 'Новая цель';
+  document.getElementById('goal-name').value = '';
+  document.getElementById('goal-target').value = '';
+  document.getElementById('goal-current').value = '';
+  document.getElementById('goal-deadline').value = '';
+  document.getElementById('goal-delete-btn').style.display = 'none';
+  renderGoalEmojiGrid();
+  setGoalPriority('med');
+  openModal('modal-goal');
+}
+
+function editGoalModal(id) {
+  const g = state.goals.find(x=>x.id===id);
+  if(!g) return;
+  editing.goal = g;
+  editing.goalEmoji = g.icon;
+  editing.goalPriority = g.priority;
+  document.getElementById('goal-modal-title').textContent = 'Изменить цель';
+  document.getElementById('goal-name').value = g.name;
+  document.getElementById('goal-target').value = g.target;
+  document.getElementById('goal-current').value = g.current;
+  document.getElementById('goal-deadline').value = g.deadline || '';
+  document.getElementById('goal-delete-btn').style.display = '';
+  renderGoalEmojiGrid();
+  setGoalPriority(g.priority);
+  openModal('modal-goal');
+}
+
+function renderGoalEmojiGrid() {
+  document.getElementById('goal-emoji-grid').innerHTML = GOAL_EMOJI.map(e => `
+    <div class="cat-pick${editing.goalEmoji===e?' active':''}" onclick="selectGoalEmoji('${e}')">
+      <div class="cat-pick-emoji">${e}</div>
+    </div>`).join('');
+}
+function selectGoalEmoji(e) { editing.goalEmoji = e; renderGoalEmojiGrid(); }
+function setGoalPriority(p) {
+  editing.goalPriority = p;
+  document.querySelectorAll('#goal-priority-seg button').forEach(b => b.classList.toggle('active', b.dataset.pri === p));
+}
+
+function saveGoal() {
+  const name = document.getElementById('goal-name').value.trim();
+  const target = parseFloat(document.getElementById('goal-target').value) || 0;
+  const current = parseFloat(document.getElementById('goal-current').value) || 0;
+  const deadline = document.getElementById('goal-deadline').value || null;
+
+  if(!name) { showToast('Введите название'); return; }
+  if(!target) { showToast('Введите сумму цели'); return; }
+
+  if(editing.goal) {
+    Object.assign(editing.goal, { name, icon: editing.goalEmoji, target, current, deadline, priority: editing.goalPriority });
+    showToast('Цель обновлена');
+  } else {
+    if(!state.goals) state.goals = [];
+    state.goals.push({
+      id: 'g_' + Date.now() + '_' + Math.random().toString(36).slice(2,6),
+      name, icon: editing.goalEmoji, target, current, deadline,
+      priority: editing.goalPriority, createdAt: Date.now()
+    });
+    showToast('Цель добавлена');
+  }
+  saveState();
+  closeModal('modal-goal');
+  renderGoals();
+  renderHome();
+}
+
+function deleteGoal() {
+  if(!editing.goal) return;
+  if(!confirm('Удалить эту цель?')) return;
+  state.goals = state.goals.filter(g => g.id !== editing.goal.id);
+  saveState();
+  closeModal('modal-goal');
+  showToast('Цель удалена');
+  renderGoals();
+  renderHome();
+}
+
+// Пополнение цели
+function openGoalDeposit(goalId) {
+  const g = state.goals.find(x=>x.id===goalId);
+  if(!g) return;
+  editing.depositGoalId = goalId;
+  editing.depositAmount = '';
+  const s = calcGoalStats(g);
+  document.getElementById('goal-deposit-info').innerHTML = `
+    <div style="font-size:40px; margin-bottom:6px;">${g.icon}</div>
+    <div style="font-size:16px; font-weight:600;">${escapeHtml(g.name)}</div>
+    <div style="font-size:13px; color:var(--text-tertiary); margin-top:4px;" class="num">${fmt(g.current)} из ${fmt(g.target)} · ${s.pct}%</div>
+  `;
+  updateDepositDisplay();
+  openModal('modal-goal-deposit');
+}
+function depositKey(key) {
+  if(key === 'del') editing.depositAmount = editing.depositAmount.slice(0,-1);
+  else {
+    if(editing.depositAmount.length >= 10) return;
+    if(editing.depositAmount === '' && (key==='0' || key==='000')) return;
+    editing.depositAmount += key;
+  }
+  updateDepositDisplay();
+}
+function updateDepositDisplay() {
+  const el = document.getElementById('deposit-amount-display');
+  const v = document.getElementById('deposit-amount-value');
+  v.textContent = new Intl.NumberFormat('ru-RU').format(parseInt(editing.depositAmount||'0', 10));
+  el.classList.toggle('empty', !editing.depositAmount);
+}
+function saveDeposit(withdraw=false) {
+  const amount = parseInt(editing.depositAmount||'0', 10);
+  if(!amount) { showToast('Введите сумму'); return; }
+  const g = state.goals.find(x=>x.id===editing.depositGoalId);
+  if(!g) return;
+  if(withdraw) {
+    if(amount > g.current) { showToast('Сумма больше накопленного'); return; }
+    g.current -= amount;
+    showToast('Снято с цели');
+  } else {
+    g.current += amount;
+    const s = calcGoalStats(g);
+    showToast(s.complete ? '🎉 Цель достигнута!' : 'Цель пополнена');
+  }
+  saveState();
+  closeModal('modal-goal-deposit');
+  renderGoals();
+  renderHome();
+}
+
+/* =============================================
+   ИСТОРИЯ (список + графики)
+   ============================================= */
+let historyView = 'list';
+let historyFilter={period:'month',type:'all'};
+
+function setHistoryView(view) {
+  historyView = view;
+  document.getElementById('view-list-btn').classList.toggle('active', view==='list');
+  document.getElementById('view-charts-btn').classList.toggle('active', view==='charts');
+  document.getElementById('history-list-view').style.display = view==='list' ? '' : 'none';
+  document.getElementById('history-charts-view').style.display = view==='charts' ? '' : 'none';
+  if(view==='charts') renderHistoryCharts();
+  else renderHistoryList();
+}
+
+function renderHistoryScreen() {
+  if(historyView === 'list') renderHistoryList();
+  else renderHistoryCharts();
+}
+
+document.querySelectorAll('#period-filters .filter-chip').forEach(c=>{c.addEventListener('click',()=>{document.querySelectorAll('#period-filters .filter-chip').forEach(x=>x.classList.remove('active'));c.classList.add('active');historyFilter.period=c.dataset.period;renderHistoryList();});});
+document.querySelectorAll('#type-filters .filter-chip').forEach(c=>{c.addEventListener('click',()=>{document.querySelectorAll('#type-filters .filter-chip').forEach(x=>x.classList.remove('active'));c.classList.add('active');historyFilter.type=c.dataset.type;renderHistoryList();});});
+
+function renderHistoryList() {
+  const now=new Date();
+  let cutoff=null;
+  if(historyFilter.period==='month') cutoff=new Date(now.getFullYear(),now.getMonth(),1);
+  else if(historyFilter.period==='week'){cutoff=new Date(now);cutoff.setDate(cutoff.getDate()-7);cutoff.setHours(0,0,0,0);}
+  let filtered=state.transactions.filter(t=>{if(cutoff&&new Date(t.date)<cutoff)return false;if(historyFilter.type!=='all'&&t.type!==historyFilter.type)return false;return true;});
+  filtered.sort((a,b)=>b.date.localeCompare(a.date)||b.createdAt-a.createdAt);
+  const container=document.getElementById('history-list');
+  if(!filtered.length){container.innerHTML='<div class="empty"><div class="empty-title">Нет операций</div><div class="empty-hint">За выбранный период ничего не найдено</div></div>';return;}
+  const groups={};
+  filtered.forEach(tx=>{if(!groups[tx.date])groups[tx.date]=[];groups[tx.date].push(tx);});
+  container.innerHTML=Object.entries(groups).map(([date,txs])=>{
+    const net=txs.reduce((s,t)=>s+(t.type==='income'?t.amount:-t.amount),0);
+    return `<div class="date-group"><div class="date-group-header"><span>${fmtDateGroup(date)}</span><span class="num">${net>=0?'+':'−'}${fmt(Math.abs(net),false)} ₸</span></div><div class="tx-list">${txs.map(tx=>{const cat=findCategory(tx.categoryId);const sign=tx.type==='income'?'+':'−';return `<div class="tx-item" onclick="editTransaction('${tx.id}')"><div class="tx-icon">${cat?cat.icon:'📦'}</div><div class="tx-content"><div class="tx-title">${cat?cat.name:'Без категории'}</div><div class="tx-subtitle">${tx.note?escapeHtml(tx.note):''}</div></div><div class="tx-amount ${tx.type} num">${sign}${fmt(tx.amount,false)} ₸</div></div>`;}).join('')}</div></div>`;
+  }).join('');
+}
+
+let pieChart=null, barChart=null;
+const CHART_COLORS=['#0F5C5B','#B83A2E','#C28A1F','#5C7C8A','#8A5C7C','#7C8A5C','#B85C8A','#5C8A5C','#8A7C5C','#5C5C8A','#8A5C5C','#5C8A8A'];
+
+function renderHistoryCharts() {
+  const now=new Date();
+  const monthStart=new Date(now.getFullYear(),now.getMonth(),1);
+  const mEx=state.transactions.filter(t=>t.type==='expense'&&new Date(t.date)>=monthStart);
+  const byC={};
+  mEx.forEach(t=>{byC[t.categoryId]=(byC[t.categoryId]||0)+t.amount;});
+  const total=Object.values(byC).reduce((s,v)=>s+v,0);
+  const entries=Object.entries(byC).map(([id,amt])=>({id,amt,cat:findCategory(id)})).filter(e=>e.cat).sort((a,b)=>b.amt-a.amt);
+  renderPieChart(entries,total);
+  renderBarChart();
+  renderRecurring();
+}
+
+function getThemeText() {
+  return getComputedStyle(document.documentElement).getPropertyValue('--text').trim();
+}
+function getThemeBorder() {
+  return getComputedStyle(document.documentElement).getPropertyValue('--border').trim();
+}
+
+function renderPieChart(entries,total) {
+  const ctx=document.getElementById('chart-pie').getContext('2d');
+  const leg=document.getElementById('pie-legend');
+  if(pieChart)pieChart.destroy();
+  if(!entries.length){
+    leg.innerHTML='<div class="empty" style="padding:20px 0"><div class="empty-hint">Расходов в этом месяце нет</div></div>';
+    pieChart=new Chart(ctx,{type:'doughnut',data:{labels:['Нет'],datasets:[{data:[1],backgroundColor:[getThemeBorder()],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,cutout:'70%',plugins:{legend:{display:false},tooltip:{enabled:false}}}});
+    return;
+  }
+  const colors=entries.map((_,i)=>CHART_COLORS[i%CHART_COLORS.length]);
+  const surface = getComputedStyle(document.documentElement).getPropertyValue('--surface').trim();
+  pieChart=new Chart(ctx,{type:'doughnut',data:{labels:entries.map(e=>e.cat.name),datasets:[{data:entries.map(e=>e.amt),backgroundColor:colors,borderColor:surface,borderWidth:3,hoverOffset:6}]},options:{responsive:true,maintainAspectRatio:false,cutout:'65%',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.label}: ${fmt(c.parsed)}`},padding:10,cornerRadius:8}}}});
+  leg.innerHTML=entries.map((e,i)=>{
+    const p=total>0?Math.round(e.amt/total*100):0;
+    return `<div class="legend-row"><div class="legend-dot" style="background:${colors[i]}"></div><div class="legend-name">${e.cat.icon} ${e.cat.name}</div><div class="legend-value num">${fmt(e.amt)}</div><div class="legend-pct num">${p}%</div></div>`;
+  }).join('');
+}
+
+function renderBarChart() {
+  const ctx=document.getElementById('chart-bar').getContext('2d');
+  if(barChart)barChart.destroy();
+  const now=new Date();
+  const months=[];
+  for(let i=5;i>=0;i--){const d=new Date(now.getFullYear(),now.getMonth()-i,1);months.push({start:d,end:new Date(d.getFullYear(),d.getMonth()+1,1),label:d.toLocaleDateString('ru-RU',{month:'short'})});}
+  const inc=months.map(m=>state.transactions.filter(t=>t.type==='income'&&new Date(t.date)>=m.start&&new Date(t.date)<m.end).reduce((s,t)=>s+t.amount,0));
+  const exp=months.map(m=>state.transactions.filter(t=>t.type==='expense'&&new Date(t.date)>=m.start&&new Date(t.date)<m.end).reduce((s,t)=>s+t.amount,0));
+  const textColor = getThemeText();
+  const borderColor = getThemeBorder();
+  barChart=new Chart(ctx,{type:'bar',data:{labels:months.map(m=>m.label),datasets:[{label:'Доходы',data:inc,backgroundColor:'#0F5C5B',borderRadius:6,barPercentage:.7},{label:'Расходы',data:exp,backgroundColor:'#B83A2E',borderRadius:6,barPercentage:.7}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{boxWidth:10,boxHeight:10,padding:14,font:{size:12},color:textColor}},tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${fmt(c.parsed.y)}`},padding:10,cornerRadius:8}},scales:{x:{grid:{display:false},ticks:{font:{size:11},color:textColor}},y:{grid:{color:borderColor},ticks:{font:{size:11},color:textColor,callback:v=>v>=1000?(v/1000)+'к':v}}}}});
+}
+
+function renderRecurring() {
+  const el=document.getElementById('recurring-list');
+  if(!state.recurring||!state.recurring.length){el.innerHTML='<div class="empty"><div class="empty-title">Платежей нет</div><div class="empty-hint">Добавьте кредиты, подписки или аренду</div></div>';return;}
+  const today=new Date();today.setHours(0,0,0,0);
+  el.innerHTML=[...state.recurring].map(r=>({...r,next:nextOccurrence(r.day,today)})).sort((a,b)=>a.next-b.next).map(r=>{
+    const cat=findCategory(r.categoryId);
+    const d=Math.round((r.next-today)/86400000);
+    const due=d<=2;
+    return `<div class="recurring-item" onclick="editRecurring('${r.id}')"><div class="recurring-day${due?' due':''}"><span class="recurring-day-num num">${r.day}</span><span class="recurring-day-label">число</span></div><div class="tx-content"><div class="tx-title">${escapeHtml(r.name)}</div><div class="tx-subtitle">${cat?cat.icon+' '+cat.name:'без категории'}</div></div><div class="tx-amount expense num">${fmt(r.amount)}</div></div>`;
+  }).join('');
+}
+
+/* =============================================
+   КРЕДИТЫ
+   ============================================= */
+function getCreditStats(cr) {
+  const today=new Date(); today.setHours(0,0,0,0);
+  let schedule = cr.schedule || [];
+  let nextPayment=null, paidCount=0;
+  if(schedule.length) {
+    for(const p of schedule) {
+      const pd=parseScheduleDate(p.date);
+      if(pd < today) paidCount++;
+      else if(!nextPayment) nextPayment=p;
+    }
+    const pct = Math.round(paidCount/schedule.length*100);
+    const paidAmount = schedule.slice(0, paidCount).reduce((s,p)=>s+p.principal, 0);
+    const remaining = paidCount > 0 ? schedule[paidCount-1]?.balance || 0 : cr.amount;
+    return { nextPayment, paidCount, pct, paidAmount, remaining, total: schedule.length };
+  }
+  const nextDate = cr.nextDate ? new Date(cr.nextDate) : null;
+  if(nextDate && nextDate >= today) nextPayment = { date: cr.nextDate.split('-').reverse().join('/'), total: cr.payment, interest: 0, principal: cr.payment, balance: cr.currentBalance };
+  return { nextPayment, paidCount:0, pct:0, paidAmount:0, remaining: cr.currentBalance||0, total:0 };
+}
+
+let creditCharts = {};
+
+function renderCredits() {
+  const container = document.getElementById('credits-list');
+  if(!state.credits || !state.credits.length) {
+    container.innerHTML = '<div class="empty" style="padding:40px 20px;"><div class="empty-title">Кредитов нет</div><div class="empty-hint">Добавьте кредит кнопкой выше</div></div>';
+    return;
+  }
+  Object.values(creditCharts).forEach(c=>c.destroy());
+  creditCharts = {};
+  container.innerHTML = state.credits.map(cr => {
+    const {nextPayment,paidCount,pct,paidAmount,remaining,total} = getCreditStats(cr);
+    const color = BANK_COLORS[cr.bank]||'#0F5C5B';
+    const schedule = cr.schedule||[];
+    const totalInterest = schedule.reduce((s,p)=>s+p.interest, 0);
+    const totalSum = schedule.reduce((s,p)=>s+p.total, 0);
+    const showRows = schedule.slice(Math.max(0, paidCount-2), paidCount+8);
+    return `
+    <div class="credit-card">
+      <div class="credit-card-header" style="background:${color}">
+        <div class="credit-card-bank">${BANK_NAMES[cr.bank]||cr.bank}</div>
+        <div class="credit-card-name">${escapeHtml(cr.name)}</div>
+        <div class="credit-card-meta">
+          <div class="credit-card-meta-item"><span class="credit-card-meta-label">Ставка</span><span class="credit-card-meta-value">${cr.rate}%</span></div>
+          <div class="credit-card-meta-item"><span class="credit-card-meta-label">Сумма</span><span class="credit-card-meta-value num">${fmt(cr.amount)}</span></div>
+          <div class="credit-card-meta-item"><span class="credit-card-meta-label">Срок</span><span class="credit-card-meta-value">${cr.months} мес.</span></div>
+        </div>
+      </div>
+      ${total>0?`<div class="credit-progress-wrap"><div class="credit-progress-label"><span>${paidCount} из ${total} платежей</span><span class="credit-progress-pct">${pct}%</span></div><div class="credit-progress-bar"><div class="credit-progress-fill" style="width:${pct}%"></div></div></div>`:''}
+      ${nextPayment?`<div class="next-payment-banner" style="margin-top:12px"><div class="next-payment-icon">📅</div><div class="next-payment-info"><div class="next-payment-date">Следующий платёж — ${nextPayment.date}</div><div class="next-payment-amount num">${fmt(nextPayment.total)}</div>${nextPayment.interest>0?`<div class="next-payment-detail">Долг: ${fmt(nextPayment.principal,false)} ₸ · Проценты: ${fmt(nextPayment.interest,false)} ₸</div>`:''}</div></div>`:'<div style="margin:0 20px 12px;padding:12px 16px;background:var(--income-soft);border-radius:var(--radius-lg);color:var(--income);font-weight:600;font-size:14px;">✅ Кредит выплачен</div>'}
+      <div class="credit-summary">
+        <div class="credit-summary-item"><div class="credit-summary-label">Остаток долга</div><div class="credit-summary-value debt num">${fmt(remaining)}</div><div class="credit-summary-sub">из ${fmt(cr.amount)}</div></div>
+        <div class="credit-summary-item"><div class="credit-summary-label">Выплачено</div><div class="credit-summary-value paid num">${fmt(paidAmount)}</div><div class="credit-summary-sub">основного долга</div></div>
+        ${total>0?`<div class="credit-summary-item"><div class="credit-summary-label">Переплата</div><div class="credit-summary-value" style="color:var(--expense)" class="num">${fmt(totalInterest)}</div><div class="credit-summary-sub">проценты</div></div><div class="credit-summary-item"><div class="credit-summary-label">Итого выплат</div><div class="credit-summary-value num">${fmt(totalSum)}</div><div class="credit-summary-sub">всего</div></div>`:''}
+      </div>
+      ${total>0?`<div class="chart-card" style="margin:0 20px 12px"><h3>Остаток долга</h3><div class="chart-wrap" style="height:180px"><canvas id="credit-chart-${cr.id}"></canvas></div></div>`:''}
+      ${showRows.length?`<div class="payments-table-wrap"><div class="credit-section-title">Платежи</div><div class="payments-table-header"><span class="pt-n">№</span><span class="pt-date">Дата</span><span class="pt-total">Платёж</span><span class="pt-interest">%</span><span class="pt-principal">Долг</span><span class="pt-balance">Остаток</span></div><div class="tx-list">${showRows.map(p=>{const pd=parseScheduleDate(p.date);const today2=new Date();today2.setHours(0,0,0,0);const isPaid=pd<today2;const isCurrent=!isPaid&&p.n===paidCount+1;return `<div class="payment-row${isPaid?' paid':''}${isCurrent?' current':''}"><span class="pt-n-val">${p.n}</span><span class="pt-date-val">${p.date}</span><span class="pt-total-val num">${fmt(p.total,false)}</span><span class="pt-interest-val num">${fmt(p.interest,false)}</span><span class="pt-principal-val num">${fmt(p.principal,false)}</span><span class="pt-balance-val num">${fmt(p.balance,false)}</span></div>`;}).join('')}</div></div>`:''}
+      <div style="padding:0 20px 20px;"><button class="btn-secondary" onclick="editCreditModal('${cr.id}')">Изменить</button></div>
+    </div>`;
+  }).join('');
+
+  state.credits.forEach(cr => {
+    const schedule = cr.schedule||[];
+    if(!schedule.length) return;
+    const canvas = document.getElementById(`credit-chart-${cr.id}`);
+    if(!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const color = BANK_COLORS[cr.bank]||'#0F5C5B';
+    const step = Math.ceil(schedule.length/20);
+    const pts = schedule.filter((_,i)=>i%step===0||i===schedule.length-1);
+    const textColor = getThemeText();
+    const borderColor = getThemeBorder();
+    creditCharts[cr.id] = new Chart(ctx, {
+      type:'line',
+      data:{labels:pts.map(p=>p.date),datasets:[{data:pts.map(p=>p.balance),borderColor:color,backgroundColor:color+'30',fill:true,tension:.3,pointRadius:1,pointHoverRadius:5}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`Остаток: ${fmt(c.parsed.y)}`},padding:8,cornerRadius:8}},scales:{x:{grid:{display:false},ticks:{font:{size:10},color:textColor,maxTicksLimit:6}},y:{grid:{color:borderColor},ticks:{font:{size:10},color:textColor,callback:v=>v>=1000?(v/1000)+'к':v}}}}
+    });
+  });
+}
+
+/* =============================================
+   КРЕДИТ — модал
+   ============================================= */
+function setScheduleMode(mode) {
+  scheduleMode = mode;
+  document.getElementById('btn-schedule-auto').classList.toggle('active', mode==='auto');
+  document.getElementById('btn-schedule-auto').classList.toggle('income', mode==='auto');
+  document.getElementById('btn-schedule-manual').classList.toggle('active', mode==='manual');
+  document.getElementById('btn-schedule-manual').classList.toggle('income', mode==='manual');
+  document.getElementById('schedule-auto-block').style.display = mode==='auto'?'':'none';
+  document.getElementById('schedule-manual-block').style.display = mode==='manual'?'':'none';
+}
+function openAddCreditModal() {
+  editing.credit = null;
+  parsedPdfSchedule = null;
+  document.getElementById('credit-modal-title').textContent = 'Новый кредит';
+  ['credit-name','credit-amount','credit-rate','credit-months','credit-balance','credit-payment'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('credit-bank').value='forte';
+  document.getElementById('credit-startdate').valueAsDate=new Date();
+  document.getElementById('credit-nextdate').valueAsDate=new Date();
+  document.getElementById('credit-delete-btn').style.display='none';
+  document.getElementById('pdf-status').style.display='none';
+  setScheduleMode('auto');
+  openModal('modal-credit');
+}
+function editCreditModal(id) {
+  const cr = state.credits.find(c=>c.id===id);
+  if(!cr) return;
+  editing.credit = cr;
+  parsedPdfSchedule = cr.schedule||null;
+  document.getElementById('credit-modal-title').textContent = 'Изменить кредит';
+  document.getElementById('credit-bank').value = cr.bank||'forte';
+  document.getElementById('credit-name').value = cr.name||'';
+  document.getElementById('credit-amount').value = cr.amount||'';
+  document.getElementById('credit-rate').value = cr.rate||'';
+  document.getElementById('credit-startdate').value = cr.startDate||'';
+  document.getElementById('credit-months').value = cr.months||'';
+  document.getElementById('credit-delete-btn').style.display='';
+  document.getElementById('pdf-status').style.display='none';
+  const mode = cr.schedule&&cr.schedule.length ? 'auto':'manual';
+  if(mode==='manual') {
+    document.getElementById('credit-balance').value = cr.currentBalance||'';
+    document.getElementById('credit-payment').value = cr.payment||'';
+    document.getElementById('credit-nextdate').value = cr.nextDate||'';
+  }
+  setScheduleMode(mode);
+  openModal('modal-credit');
+}
+
+async function handlePdfUpload(event) {
+  const file = event.target.files[0];
+  if(!file) return;
+  const statusEl = document.getElementById('pdf-status');
+  statusEl.style.display = '';
+  statusEl.textContent = '⏳ Читаю файл...';
+  try {
+    const ab = await file.arrayBuffer();
+    const text = extractTextFromPdfBytes(new Uint8Array(ab));
+    const rows = parsePdfScheduleText(text);
+    if(rows.length < 3) {
+      statusEl.textContent = '⚠️ Не удалось прочитать таблицу. Введите данные вручную.';
+      setScheduleMode('manual');
+      return;
+    }
+    parsedPdfSchedule = rows;
+    autofillFromSchedule(rows);
+    statusEl.textContent = `✅ Загружено ${rows.length} платежей`;
+  } catch(e) {
+    statusEl.textContent = '⚠️ Ошибка чтения PDF. Введите вручную.';
+    setScheduleMode('manual');
+  }
+  event.target.value = '';
+}
+function extractTextFromPdfBytes(bytes) {
+  const str = new TextDecoder('latin1').decode(bytes);
+  const texts = [];
+  const btEt = /BT([\s\S]*?)ET/g;
+  let m;
+  while((m=btEt.exec(str))!==null) {
+    const block = m[1];
+    const tjRe = /\(([^)]*)\)\s*Tj/g;
+    const tjARe = /\[([^\]]*)\]\s*TJ/g;
+    let tm;
+    while((tm=tjRe.exec(block))!==null) texts.push(tm[1]);
+    while((tm=tjARe.exec(block))!==null) {
+      const parts = tm[1].match(/\(([^)]*)\)/g)||[];
+      texts.push(parts.map(p=>p.slice(1,-1)).join(''));
+    }
+  }
+  return texts.join(' ');
+}
+function parsePdfScheduleText(text) {
+  const rows = [];
+  const re = /\b(\d{1,2})\s+(\d{2}\/\d{2}\/\d{4})\s+([\d]+[.,]\d{2})\s+([\d]+[.,]\d{2})\s+([\d]+[.,]\d{2})\s+([\d]+[.,]\d{2})\b/g;
+  let m;
+  while((m=re.exec(text))!==null) {
+    const n=parseInt(m[1]);
+    if(n<1||n>360) continue;
+    rows.push({n,date:m[2],total:parseFloat(m[3].replace(',','.')),interest:parseFloat(m[4].replace(',','.')),principal:parseFloat(m[5].replace(',','.')),balance:parseFloat(m[6].replace(',','.'))});
+  }
+  const seen=new Set();
+  return rows.filter(r=>{if(seen.has(r.n))return false;seen.add(r.n);return true;}).sort((a,b)=>a.n-b.n);
+}
+function autofillFromSchedule(rows) {
+  if(!rows.length) return;
+  const firstBalance = rows[0].balance + rows[0].principal;
+  if(!document.getElementById('credit-amount').value) document.getElementById('credit-amount').value = Math.round(firstBalance);
+  if(!document.getElementById('credit-months').value) document.getElementById('credit-months').value = rows.length;
+}
+function saveCredit() {
+  const bank=document.getElementById('credit-bank').value;
+  const name=document.getElementById('credit-name').value.trim();
+  const amount=parseFloat(document.getElementById('credit-amount').value)||0;
+  const rate=parseFloat(document.getElementById('credit-rate').value)||0;
+  const startDate=document.getElementById('credit-startdate').value;
+  const months=parseInt(document.getElementById('credit-months').value)||0;
+  if(!name){showToast('Введите название');return;}
+  if(!amount){showToast('Введите сумму');return;}
+  let schedule=null, currentBalance=0, payment=0, nextDate='';
+  if(scheduleMode==='auto') schedule=parsedPdfSchedule;
+  else { currentBalance=parseFloat(document.getElementById('credit-balance').value)||0; payment=parseFloat(document.getElementById('credit-payment').value)||0; nextDate=document.getElementById('credit-nextdate').value; }
+  const data={bank,name,amount,rate,startDate,months,schedule,currentBalance,payment,nextDate};
+  if(editing.credit){Object.assign(editing.credit,data);showToast('Обновлено');}
+  else{if(!state.credits)state.credits=[];state.credits.push({id:'cr_'+Date.now(),...data});showToast('Добавлено');}
+  saveState();closeModal('modal-credit');renderCredits();renderHome();
+}
+function deleteCredit(){if(!editing.credit)return;if(!confirm('Удалить кредит?'))return;state.credits=state.credits.filter(c=>c.id!==editing.credit.id);saveState();closeModal('modal-credit');showToast('Удалено');renderCredits();renderHome();}
+
+/* =============================================
+   ТРАНЗАКЦИИ
+   ============================================= */
+function openAddModal(type) {
+  editing.tx=null; editing.type=type; editing.amount=''; editing.categoryId=null;
+  document.getElementById('add-title').textContent='Новая операция';
+  document.getElementById('btn-delete-tx').style.display='none';
+  document.getElementById('add-date').valueAsDate=new Date();
+  document.getElementById('add-note').value='';
+  setAddType(type); updateAmountDisplay(); openModal('modal-add');
+}
+function editTransaction(id) {
+  const tx=state.transactions.find(t=>t.id===id);if(!tx)return;
+  editing.tx=tx;editing.type=tx.type;editing.amount=String(tx.amount);editing.categoryId=tx.categoryId;
+  document.getElementById('add-title').textContent='Редактировать';
+  document.getElementById('btn-delete-tx').style.display='';
+  document.getElementById('add-date').value=tx.date;document.getElementById('add-note').value=tx.note||'';
+  setAddType(tx.type);updateAmountDisplay();openModal('modal-add');
+}
+function setAddType(type) {
+  editing.type=type;
+  document.getElementById('btn-type-income').classList.toggle('active',type==='income');
+  document.getElementById('btn-type-expense').classList.toggle('active',type==='expense');
+  const v=state.categories[type].find(c=>c.id===editing.categoryId);
+  if(!v)editing.categoryId=null;
+  renderCategoryGrid();
+}
+function renderCategoryGrid() {
+  document.getElementById('cat-grid').innerHTML=state.categories[editing.type].map(c=>`<div class="cat-pick${editing.categoryId===c.id?' active':''}" onclick="selectCategory('${c.id}')"><div class="cat-pick-emoji">${c.icon}</div><div class="cat-pick-name">${escapeHtml(c.name)}</div></div>`).join('');
+}
+function selectCategory(id){editing.categoryId=id;renderCategoryGrid();}
+function numKey(key) {
+  if(key==='del')editing.amount=editing.amount.slice(0,-1);
+  else{if(editing.amount.length>=10)return;if(editing.amount===''&&(key==='000'||key==='0'))return;editing.amount+=key;}
+  updateAmountDisplay();
+}
+function updateAmountDisplay() {
+  const el=document.getElementById('amount-display'),v=document.getElementById('amount-value');
+  v.textContent=new Intl.NumberFormat('ru-RU').format(parseInt(editing.amount||'0',10));
+  el.classList.toggle('empty',!editing.amount);
+}
+function saveTransaction() {
+  const amount=parseInt(editing.amount||'0',10);
+  if(!amount){showToast('Введите сумму');return;}
+  if(!editing.categoryId){showToast('Выберите категорию');return;}
+  const date=document.getElementById('add-date').value||new Date().toISOString().slice(0,10);
+  const note=document.getElementById('add-note').value.trim();
+  if(editing.tx){Object.assign(editing.tx,{amount,type:editing.type,categoryId:editing.categoryId,date,note});showToast('Обновлено');}
+  else{state.transactions.push({id:'t_'+Date.now()+'_'+Math.random().toString(36).slice(2,6),type:editing.type,amount,categoryId:editing.categoryId,date,note,createdAt:Date.now()});showToast(editing.type==='income'?'Доход добавлен':'Расход добавлен');}
+  saveState();closeModal('modal-add');refreshActive();
+}
+function deleteCurrentTx(){if(!editing.tx)return;if(!confirm('Удалить операцию?'))return;state.transactions=state.transactions.filter(t=>t.id!==editing.tx.id);saveState();closeModal('modal-add');showToast('Удалено');refreshActive();}
+
+/* =============================================
+   КАТЕГОРИИ
+   ============================================= */
+function renderSettings() {
+  renderCategories();
+  updateThemeButtons();
+  updatePinUI();
+}
+function renderCategories() {
+  ['expense','income'].forEach(type=>{
+    const el=document.getElementById('cats-'+type);
+    const cats=state.categories[type];
+    if(!cats.length){el.innerHTML='<div class="empty" style="padding:20px"><div class="empty-hint">Нет категорий</div></div>';return;}
+    el.innerHTML=cats.map(c=>`<div class="settings-row" onclick="editCategoryModal('${type}','${c.id}')"><div class="cat-icon">${c.icon}</div><div class="cat-name">${escapeHtml(c.name)}</div><button class="cat-action">Изменить →</button></div>`).join('');
+  });
+}
+function openCategoryModal(type){editing.category=null;editing.categoryType=type;editing.emoji=type==='income'?'💰':'📦';document.getElementById('cat-modal-title').textContent='Новая категория';document.getElementById('cat-name-input').value='';document.getElementById('cat-delete-btn').style.display='none';renderEmojiGrid();openModal('modal-category');}
+function editCategoryModal(type,id){const cat=state.categories[type].find(c=>c.id===id);if(!cat)return;editing.category=cat;editing.categoryType=type;editing.emoji=cat.icon;document.getElementById('cat-modal-title').textContent='Изменить категорию';document.getElementById('cat-name-input').value=cat.name;document.getElementById('cat-delete-btn').style.display='';renderEmojiGrid();openModal('modal-category');}
+function renderEmojiGrid(){document.getElementById('emoji-grid').innerHTML=EMOJI_LIST.map(e=>`<div class="cat-pick${editing.emoji===e?' active':''}" onclick="selectEmoji('${e}')"><div class="cat-pick-emoji">${e}</div></div>`).join('');}
+function selectEmoji(e){editing.emoji=e;renderEmojiGrid();}
+function saveCategory(){const n=document.getElementById('cat-name-input').value.trim();if(!n){showToast('Введите название');return;}if(editing.category){editing.category.name=n;editing.category.icon=editing.emoji;showToast('Обновлено');}else{state.categories[editing.categoryType].push({id:'c_'+Date.now(),name:n,icon:editing.emoji});showToast('Добавлено');}saveState();closeModal('modal-category');renderCategories();}
+function deleteCategory(){if(!editing.category)return;const used=state.transactions.some(t=>t.categoryId===editing.category.id);if(used){if(!confirm('Удалить вместе с операциями?'))return;state.transactions=state.transactions.filter(t=>t.categoryId!==editing.category.id);}else if(!confirm('Удалить?'))return;state.categories[editing.categoryType]=state.categories[editing.categoryType].filter(c=>c.id!==editing.category.id);saveState();closeModal('modal-category');showToast('Удалено');renderCategories();}
+
+/* =============================================
+   РЕГУЛЯРНЫЕ ПЛАТЕЖИ
+   ============================================= */
+function openRecurringModal(){editing.recurring=null;document.getElementById('rec-modal-title').textContent='Новый платёж';document.getElementById('rec-name').value='';document.getElementById('rec-amount').value='';document.getElementById('rec-day').value='';document.getElementById('rec-delete-btn').style.display='none';fillRecCat();openModal('modal-recurring');}
+function editRecurring(id){const r=state.recurring.find(x=>x.id===id);if(!r)return;editing.recurring=r;document.getElementById('rec-modal-title').textContent='Изменить платёж';document.getElementById('rec-name').value=r.name;document.getElementById('rec-amount').value=r.amount;document.getElementById('rec-day').value=r.day;document.getElementById('rec-delete-btn').style.display='';fillRecCat(r.categoryId);openModal('modal-recurring');}
+function fillRecCat(sel){document.getElementById('rec-category').innerHTML=state.categories.expense.map(c=>`<option value="${c.id}"${c.id===sel?' selected':''}>${c.icon} ${c.name}</option>`).join('');}
+function saveRecurring(){const name=document.getElementById('rec-name').value.trim(),amount=parseInt(document.getElementById('rec-amount').value),day=parseInt(document.getElementById('rec-day').value),catId=document.getElementById('rec-category').value;if(!name){showToast('Введите название');return;}if(!amount){showToast('Введите сумму');return;}if(!day||day<1||day>28){showToast('День от 1 до 28');return;}if(editing.recurring){Object.assign(editing.recurring,{name,amount,day,categoryId:catId});}else{state.recurring.push({id:'r_'+Date.now(),name,amount,day,categoryId:catId});}saveState();closeModal('modal-recurring');showToast('Сохранено');renderRecurring();renderHome();}
+function deleteRecurring(){if(!editing.recurring)return;if(!confirm('Удалить?'))return;state.recurring=state.recurring.filter(r=>r.id!==editing.recurring.id);saveState();closeModal('modal-recurring');showToast('Удалено');renderRecurring();renderHome();}
+
+/* =============================================
+   ЭКСПОРТ / ИМПОРТ
+   ============================================= */
+function exportData(){const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`budget-${new Date().toISOString().slice(0,10)}.json`;a.click();showToast('Файл сохранён');}
+function importData(){document.getElementById('import-file').click();}
+function handleImport(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{try{const d=JSON.parse(ev.target.result);if(!d.transactions||!d.categories)throw 0;if(!confirm('Заменить все данные?'))return;state=d;if(!state.recurring)state.recurring=[];if(!state.credits)state.credits=[];if(!state.goals)state.goals=[];saveState();renderHome();renderSettings();showToast('Импортировано');}catch(e){showToast('Ошибка файла');}};r.readAsText(f);e.target.value='';}
+function confirmReset(){if(!confirm('Удалить ВСЕ данные?'))return;if(!confirm('Точно?'))return;localStorage.removeItem(STORAGE_KEY);state=loadState();renderHome();renderSettings();showToast('Удалено');}
+
+/* =============================================
+   МОДАЛКИ ОБЩЕЕ
+   ============================================= */
+function openModal(id){document.getElementById(id).classList.add('active');}
+function closeModal(id){document.getElementById(id).classList.remove('active');}
+document.querySelectorAll('.modal-backdrop').forEach(m=>{m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('active');});});
+
+let toastTimer=null;
+function showToast(t){const el=document.getElementById('toast');el.textContent=t;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),2200);}
+function refreshActive(){const a=document.querySelector('.screen.active');if(!a)return;const id=a.id.replace('screen-','');if(id==='home')renderHome();else if(id==='history')renderHistoryScreen();else if(id==='goals')renderGoals();else if(id==='credits')renderCredits();else if(id==='settings')renderSettings();}
+
+/* =============================================
+   ЗАПУСК
+   ============================================= */
+function init() {
+  // Применяем тему
+  applyTheme(settings.theme);
+
+  // Слушаем смену системной темы для режима "Авто"
+  if(window.matchMedia) {
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+      if(settings.theme === 'auto') applyTheme('auto');
+    });
+  }
+
+  // Дефолтные данные: кредит Forte
+  if(!state.credits) state.credits = [];
+  if(!state.goals) state.goals = [];
+  if(!state.credits.find(c=>c.id==='forte_mib69663802')) {
+    state.credits.push({
+      id:'forte_mib69663802', bank:'forte', name:'Потребительский P-05-MIB69663802',
+      amount:100000, rate:37.9, startDate:'2025-02-01', months:60,
+      schedule: FORTE_SCHEDULE, currentBalance:0, payment:0, nextDate:''
+    });
+    saveState();
+  }
+
+  // Экран блокировки или сразу приложение
+  if(settings.pinHash) {
+    showLockScreen();
+  } else {
+    hideLockScreen();
+  }
+
+  renderHome();
+}
+
+init();
+</script>
+</body>
+</html>
+<!-- ДОПОЛНИТЕЛЬНЫЙ JS: PDF парсер, биометрия, кредит-как-категория -->
+<script>
+/* =============================================
+   PDF.js WORKER SETUP
+   ============================================= */
+// Указываем путь к worker для PDF.js
+if(typeof pdfjsLib !== 'undefined') {
+  pdfjsLib.GlobalWorkerOptions.workerSrc =
+    'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+}
+
+/* =============================================
+   PDF ОВЕРЛЕЙ — утилиты
+   ============================================= */
+function showPdfOverlay(title, sub) {
+  document.getElementById('pdf-overlay').classList.add('active');
+  document.getElementById('pdf-overlay-title').textContent = title;
+  document.getElementById('pdf-overlay-sub').textContent = sub;
+  setPdfProgress(0);
+}
+function hidePdfOverlay() {
+  document.getElementById('pdf-overlay').classList.remove('active');
+}
+function setPdfProgress(pct, sub) {
+  document.getElementById('pdf-overlay-bar').style.width = pct + '%';
+  if(sub) document.getElementById('pdf-overlay-sub').textContent = sub;
+}
+
+/* =============================================
+   PDF.js — извлечение текста с fallback на OCR
+   ============================================= */
+async function extractTextFromPdf(file, onProgress) {
+  const ab = await file.arrayBuffer();
+
+  try {
+    const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(ab) }).promise;
+    const totalPages = pdf.numPages;
+    let fullText = '';
+    let tokenStream = ''; // поток всех токенов через пробел для токен-парсера
+
+    for(let i = 1; i <= totalPages; i++) {
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+
+      // Метод 1: строки — разбиваем по Y-позиции (для строчных PDF)
+      // Группируем items по Y-координате -> получаем строки таблицы
+      const itemsByY = {};
+      for(const item of content.items) {
+        if(!item.str.trim()) continue;
+        const y = Math.round(item.transform[5]); // Y-позиция
+        if(!itemsByY[y]) itemsByY[y] = [];
+        itemsByY[y].push(item.str.trim());
+      }
+      // Сортируем строки по Y убыванию (верх страницы первый)
+      const sortedYs = Object.keys(itemsByY).map(Number).sort((a,b) => b - a);
+      const lineText = sortedYs.map(y => itemsByY[y].join(' ')).join('\n');
+      fullText += lineText + '\n';
+
+      // Метод 2: сплошной поток токенов
+      tokenStream += content.items.map(item => item.str.trim()).filter(Boolean).join(' ') + ' ';
+
+      if(onProgress) onProgress(Math.round(i / totalPages * 60), `Страница ${i} из ${totalPages}`);
+    }
+
+    if(fullText.trim().length > 50) {
+      // Возвращаем ОБА: строчный текст и поток токенов
+      return { text: fullText, tokenStream, method: 'pdfjs', pdf };
+    }
+
+    if(onProgress) onProgress(60, 'Скан обнаружен, запускаю OCR...');
+    return await ocrFallback(pdf, totalPages, onProgress);
+
+  } catch(e) {
+    console.error('PDF.js error:', e);
+    throw new Error('Не удалось прочитать PDF: ' + e.message);
+  }
+}
+
+/* =============================================
+   OCR через Tesseract.js — для сканированных PDF
+   ============================================= */
+async function ocrFallback(pdf, totalPages, onProgress) {
+  const canvas = document.getElementById('ocr-canvas');
+  const ctx = canvas.getContext('2d');
+  let fullText = '';
+
+  // Инициализируем Tesseract с RUS + KAZ языком
+  const worker = await Tesseract.createWorker('rus+kaz', 1, {
+    logger: m => {
+      if(m.status === 'recognizing text' && onProgress) {
+        const pct = 60 + Math.round(m.progress * 35);
+        onProgress(pct, `OCR: ${Math.round(m.progress * 100)}%`);
+      }
+    }
+  });
+
+  for(let i = 1; i <= totalPages; i++) {
+    const page = await pdf.getPage(i);
+    const viewport = page.getViewport({ scale: 2.0 }); // 2x для лучшего распознавания
+
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+
+    await page.render({ canvasContext: ctx, viewport }).promise;
+
+    const { data: { text } } = await worker.recognize(canvas);
+    fullText += text + '\n';
+    if(onProgress) onProgress(60 + Math.round(i / totalPages * 35), `OCR страница ${i}/${totalPages}`);
+  }
+
+  await worker.terminate();
+  return { text: fullText, method: 'ocr' };
+}
+
+/* =============================================
+   ПАРСЕР ГРАФИКА ПОГАШЕНИЯ — токен-метод
+   Работает с PDF.js который разбивает текст на отдельные слова/токены.
+   Алгоритм: сканируем поток токенов, ищем паттерн
+   ЧИСЛО → ДАТА → ЧИСЛО → ЧИСЛО → ЧИСЛО → ЧИСЛО
+   Это надёжнее регулярок на полных строках, т.к. PDF.js
+   join(' ') может давать разные пробелы между элементами таблицы.
+   ============================================= */
+function parseCreditScheduleText(text) {
+  // Токенизируем: разбиваем весь текст на слова
+  const tokens = text.split(/[\s\n\r]+/).filter(t => t.length > 0);
+  const rows = [];
+  const dateRe = /^(\d{2})[/\.](\d{2})[/\.](\d{4})$/;
+  const numRe = /^\d+([.,]\d+)?$/;
+
+  let i = 0;
+  while(i < tokens.length - 5) {
+    // Шаг 1: ищем токен-номер строки (целое число 1–360)
+    const nStr = tokens[i];
+    const n = parseInt(nStr, 10);
+    if(isNaN(n) || n < 1 || n > 360 || nStr !== String(n)) {
+      i++; continue;
+    }
+
+    // Шаг 2: следующий токен — дата
+    const dateMatch = tokens[i + 1] && tokens[i + 1].match(dateRe);
+    if(!dateMatch) { i++; continue; }
+    const date = tokens[i + 1].replace(/\./g, '/');
+
+    // Шаг 3: следующие 4 токена — числа (total, interest, principal, balance)
+    const nums = [];
+    let ok = true;
+    for(let j = 0; j < 4; j++) {
+      const tok = tokens[i + 2 + j];
+      if(!tok || !numRe.test(tok)) { ok = false; break; }
+      nums.push(parseFloat(tok.replace(',', '.')));
+    }
+    if(!ok || nums.some(isNaN)) { i++; continue; }
+
+    // Проверка: total ≈ interest + principal (допуск ±5 из-за округления)
+    const [total, interest, principal, balance] = nums;
+    const diff = Math.abs(total - interest - principal);
+    if(diff > 5 && interest > 0) { i++; continue; } // не похоже на строку графика
+
+    rows.push({ n, date, total, interest, principal, balance });
+    i += 6; // перепрыгиваем все 6 токенов
+  }
+
+  // Дедупликация (на случай если один номер встретился дважды) + сортировка
+  const seen = new Set();
+  return rows
+    .filter(r => { if(seen.has(r.n)) return false; seen.add(r.n); return true; })
+    .sort((a, b) => a.n - b.n);
+}
+
+/* =============================================
+   ПАРСЕР БАНКОВСКОЙ ВЫПИСКИ
+   Поддерживает: Kaspi, Forte, Народный
+   ============================================= */
+function parseBankStatementText(text) {
+  const transactions = [];
+  const lines = text.split('\n');
+
+  // Универсальные паттерны дат и сумм
+  const dateRe = /(\d{2}[\/\.\-]\d{2}[\/\.\-]\d{4})/;
+  const amountRe = /([\d\s]+[.,]\d{2})\s*(₸|тенге|KZT)?/gi;
+
+  // Паттерны описаний (пополнение/списание)
+  const incomeKeywords = ['зачисление','пополнение','перевод получен','зарплата','поступление','приход','возврат'];
+  const expenseKeywords = ['списание','оплата','покупка','перевод отправлен','снятие','платёж','комиссия'];
+
+  // Паттерны для разных банков
+  const patterns = [
+    // Kaspi: "16.06.2026  Покупка в магазине  -5000.00"
+    { re: /(\d{2}\.\d{2}\.\d{4})\s+(.{3,60}?)\s+([-+]?[\d\s]+[.,]\d{2})\s*₸?/, bank: 'kaspi' },
+    // Forte: "01/07/2026  Платёж по кредиту  7538.68"
+    { re: /(\d{2}\/\d{2}\/\d{4})\s+(.{3,60}?)\s+([-+]?[\d\s]+[.,]\d{2})/, bank: 'forte' },
+    // Народный: "2026-06-16  Merchant Name  5000,00"
+    { re: /(\d{4}-\d{2}-\d{2})\s+(.{3,60}?)\s+([-+]?[\d\s]+[,\.]\d{2})/, bank: 'halyk' },
+  ];
+
+  for(const line of lines) {
+    const clean = line.replace(/\s+/g, ' ').trim();
+    if(clean.length < 10) continue;
+
+    for(const { re, bank } of patterns) {
+      const m = clean.match(re);
+      if(!m) continue;
+
+      let dateStr = m[1];
+      const description = m[2].trim();
+      const amountStr = m[3].replace(/\s/g,'').replace(',','.');
+      const amount = Math.abs(parseFloat(amountStr));
+
+      if(!amount || amount <= 0 || amount > 100000000) continue;
+
+      // Нормализуем дату → YYYY-MM-DD
+      let isoDate;
+      if(dateStr.includes('.')) {
+        const [d,mo,y] = dateStr.split('.');
+        isoDate = `${y}-${mo}-${d}`;
+      } else if(dateStr.includes('/')) {
+        const [d,mo,y] = dateStr.split('/');
+        isoDate = `${y}-${mo}-${d}`;
+      } else {
+        isoDate = dateStr; // уже YYYY-MM-DD
+      }
+
+      // Определяем тип (доход/расход)
+      const descLower = description.toLowerCase();
+      const isIncome = incomeKeywords.some(k => descLower.includes(k))
+        || amountStr.startsWith('+');
+      const isExpense = expenseKeywords.some(k => descLower.includes(k))
+        || amountStr.startsWith('-');
+
+      const type = isIncome ? 'income' : 'expense';
+
+      // Автоматически определяем категорию
+      let categoryId = type === 'income' ? 'i_other' : 'c_other';
+      if(descLower.includes('зарплат') || descLower.includes('salary')) categoryId = 'i_salary';
+      else if(descLower.includes('маркет') || descLower.includes('magnum') || descLower.includes('продукт')) categoryId = 'c_food';
+      else if(descLower.includes('каспи') && (descLower.includes('кредит') || descLower.includes('ипотек'))) categoryId = 'c_other';
+      else if(descLower.includes('азс') || descLower.includes('бензин') || descLower.includes('заправ')) categoryId = 'c_car';
+      else if(descLower.includes('коммун') || descLower.includes('электр') || descLower.includes('газ') || descLower.includes('вода')) categoryId = 'c_util';
+      else if(descLower.includes('аптек') || descLower.includes('клиник') || descLower.includes('медиц')) categoryId = 'c_health';
+
+      transactions.push({
+        id: 't_import_' + Date.now() + '_' + Math.random().toString(36).slice(2,5),
+        type, amount, categoryId,
+        date: isoDate,
+        note: description.slice(0, 80),
+        createdAt: Date.now(),
+        _bank: bank,
+        _raw: amountStr
+      });
+      break; // нашли совпадение для этой строки
+    }
+  }
+
+  // Дедупликация по сумме+дате+описанию
+  const seen = new Set();
+  return transactions.filter(t => {
+    const key = `${t.date}_${t.amount}_${t.note.slice(0,20)}`;
+    if(seen.has(key)) return false;
+    seen.add(key); return true;
+  });
+}
+
+/* =============================================
+   ОБРАБОТЧИКИ ЗАГРУЗКИ PDF
+   ============================================= */
+
+// Загрузка банковской выписки
+async function handleBankStatementPdf(event) {
+  const file = event.target.files[0];
+  if(!file) return;
+  event.target.value = '';
+
+  showPdfOverlay('Читаю выписку...', 'Извлекаю транзакции из PDF');
+
+  try {
+    if(typeof pdfjsLib === 'undefined') throw new Error('PDF.js не загружен. Проверьте интернет-соединение.');
+
+    const { text, tokenStream: _ts, method } = await extractTextFromPdf(file, (pct, sub) => {
+      setPdfProgress(pct, sub);
+    });
+
+    setPdfProgress(95, 'Анализирую транзакции...');
+
+    const parsed = parseBankStatementText(text);
+    hidePdfOverlay();
+
+    if(!parsed.length) {
+      showToast('⚠️ Транзакции не найдены. Формат не распознан.');
+      return;
+    }
+
+    // Показываем модал с результатами для выбора
+    showImportResultModal(parsed, 'statement');
+  } catch(e) {
+    hidePdfOverlay();
+    showToast('Ошибка: ' + e.message);
+    console.error(e);
+  }
+}
+
+// Загрузка графика погашения
+async function handleCreditSchedulePdf(event) {
+  const file = event.target.files[0];
+  if(!file) return;
+  event.target.value = '';
+
+  showPdfOverlay('Читаю график погашения...', 'Извлекаю таблицу платежей');
+
+  try {
+    if(typeof pdfjsLib === 'undefined') throw new Error('PDF.js не загружен');
+
+    const { text, tokenStream, method } = await extractTextFromPdf(file, (pct, sub) => {
+      setPdfProgress(pct, sub);
+    });
+
+    setPdfProgress(95, 'Парсю таблицу платежей...');
+
+    // Используем tokenStream если есть — он надёжнее для таблиц
+    const schedule = parseCreditScheduleText(tokenStream || text);
+    hidePdfOverlay();
+
+    if(schedule.length < 2) {
+      showToast('⚠️ График не распознан. Попробуйте текстовый (не сканированный) PDF.');
+      return;
+    }
+
+    // Открываем модал добавления кредита с предзаполненным графиком
+    parsedPdfSchedule = schedule;
+    openAddCreditModal();
+
+    // Предзаполняем данные из PDF
+    const firstBalance = schedule[0].balance + schedule[0].principal;
+    document.getElementById('credit-amount').value = Math.round(firstBalance);
+    document.getElementById('credit-months').value = schedule.length;
+
+    // Узнаём банк из имени файла
+    const fname = file.name.toLowerCase();
+    if(fname.includes('forte') || fname.includes('mib')) document.getElementById('credit-bank').value = 'forte';
+    else if(fname.includes('kaspi')) document.getElementById('credit-bank').value = 'kaspi';
+    else if(fname.includes('halyk') || fname.includes('народн')) document.getElementById('credit-bank').value = 'halyk';
+
+    setScheduleMode('auto');
+    document.getElementById('pdf-status').style.display = '';
+    document.getElementById('pdf-status').textContent = `✅ Загружено ${schedule.length} платежей (${method === 'ocr' ? 'OCR' : 'PDF.js'})`;
+
+    showToast(`✅ ${schedule.length} платежей из графика`);
+  } catch(e) {
+    hidePdfOverlay();
+    showToast('Ошибка: ' + e.message);
+    console.error(e);
+  }
+}
+
+// Также перехватываем pdf-upload в модале кредита
+const origHandlePdfUpload = window.handlePdfUpload;
+window.handlePdfUpload = async function(event) {
+  const file = event.target.files[0];
+  if(!file) return;
+  event.target.value = '';
+
+  if(typeof pdfjsLib === 'undefined') {
+    // Старый парсер как fallback
+    if(origHandlePdfUpload) return origHandlePdfUpload.call(this, {target:{files:[file],value:''}});
+    return;
+  }
+
+  const statusEl = document.getElementById('pdf-status');
+  statusEl.style.display = '';
+  statusEl.textContent = '⏳ Читаю PDF...';
+
+  try {
+    showPdfOverlay('Читаю PDF кредита...', 'Извлекаю график платежей');
+    const { text, tokenStream: ts, method } = await extractTextFromPdf(file, (pct, sub) => {
+      setPdfProgress(pct, sub);
+    });
+    const rows = parseCreditScheduleText(ts || text);
+    hidePdfOverlay();
+
+    if(rows.length < 2) {
+      statusEl.textContent = '⚠️ Таблица не найдена. Введите данные вручную.';
+      setScheduleMode('manual');
+      return;
+    }
+    parsedPdfSchedule = rows;
+    autofillFromSchedule(rows);
+    statusEl.textContent = `✅ Загружено ${rows.length} платежей (${method === 'ocr' ? 'OCR' : 'PDF.js'})`;
+  } catch(e) {
+    hidePdfOverlay();
+    statusEl.textContent = '⚠️ Ошибка: ' + e.message;
+  }
+};
+
+/* =============================================
+   МОДАЛ РЕЗУЛЬТАТОВ ИМПОРТА
+   ============================================= */
+let importResults = [];
+let importType = 'statement';
+let importSelected = new Set();
+
+function showImportResultModal(items, type) {
+  importResults = items;
+  importType = type;
+  importSelected = new Set(items.map((_,i)=>i)); // все выбраны по умолчанию
+
+  // Создаём модал динамически если нет
+  let modal = document.getElementById('modal-import-result');
+  if(!modal) {
+    modal = document.createElement('div');
+    modal.className = 'modal-backdrop';
+    modal.id = 'modal-import-result';
+    modal.innerHTML = `
+      <div class="modal">
+        <div class="modal-header">
+          <h2 id="import-result-modal-title">Найденные транзакции</h2>
+          <button class="modal-close" onclick="closeModal('modal-import-result')">✕</button>
+        </div>
+        <div class="modal-body" id="import-result-modal-body"></div>
+      </div>`;
+    modal.addEventListener('click', e => { if(e.target === modal) modal.classList.remove('active'); });
+    document.body.appendChild(modal);
+  }
+
+  const body = document.getElementById('import-result-modal-body');
+  document.getElementById('import-result-modal-title').textContent =
+    `Найдено ${items.length} транзакций`;
+
+  body.innerHTML = `
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+      <span style="font-size:13px; color:var(--text-secondary)">Выберите что импортировать</span>
+      <button onclick="toggleSelectAll()" style="background:none;border:none;color:var(--accent);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;" id="select-all-btn">Снять все</button>
+    </div>
+    <div style="max-height:50vh; overflow-y:auto; border:1px solid var(--border); border-radius:12px; background:var(--surface);">
+      ${items.map((t, i) => {
+        const cat = findCategory(t.categoryId);
+        const sign = t.type === 'income' ? '+' : '−';
+        const color = t.type === 'income' ? 'var(--income)' : 'var(--expense)';
+        return `
+        <div class="import-result-row" onclick="toggleImportItem(${i})" id="import-row-${i}">
+          <div class="import-result-check checked" id="import-check-${i}">✓</div>
+          <div style="flex:1; min-width:0;">
+            <div style="font-size:13px; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(t.note)}</div>
+            <div style="font-size:11px; color:var(--text-tertiary);">${t.date} · ${cat?cat.name:'Без категории'}</div>
+          </div>
+          <div style="font-size:14px; font-weight:600; color:${color}; margin-left:10px; white-space:nowrap;">${sign}${fmt(t.amount, false)} ₸</div>
+        </div>`;
+      }).join('')}
+    </div>
+    <div style="margin-top:16px; padding:12px; background:var(--accent-soft); border-radius:10px; font-size:13px; color:var(--accent);">
+      Выбрано: <b id="selected-count">${items.length}</b> из ${items.length} транзакций
+    </div>
+    <button class="btn-primary" style="margin-top:16px;" onclick="confirmImport()">Импортировать выбранные</button>
+    <button class="btn-secondary" onclick="closeModal('modal-import-result')">Отмена</button>
+  `;
+
+  openModal('modal-import-result');
+}
+
+function toggleImportItem(i) {
+  if(importSelected.has(i)) importSelected.delete(i);
+  else importSelected.add(i);
+  const check = document.getElementById(`import-check-${i}`);
+  check.classList.toggle('checked', importSelected.has(i));
+  check.textContent = importSelected.has(i) ? '✓' : '';
+  document.getElementById('selected-count').textContent = importSelected.size;
+}
+
+function toggleSelectAll() {
+  const allSelected = importSelected.size === importResults.length;
+  if(allSelected) { importSelected.clear(); }
+  else { importResults.forEach((_,i) => importSelected.add(i)); }
+  importResults.forEach((_,i) => {
+    const check = document.getElementById(`import-check-${i}`);
+    check.classList.toggle('checked', importSelected.has(i));
+    check.textContent = importSelected.has(i) ? '✓' : '';
+  });
+  document.getElementById('selected-count').textContent = importSelected.size;
+  document.getElementById('select-all-btn').textContent = importSelected.size === 0 ? 'Выбрать все' : 'Снять все';
+}
+
+function confirmImport() {
+  const toImport = importResults.filter((_,i) => importSelected.has(i));
+  if(!toImport.length) { showToast('Ничего не выбрано'); return; }
+
+  // Дедупликация с существующими транзакциями
+  const existingKeys = new Set(state.transactions.map(t => `${t.date}_${t.amount}_${t.note.slice(0,15)}`));
+  const newOnes = toImport.filter(t => !existingKeys.has(`${t.date}_${t.amount}_${t.note.slice(0,15)}`));
+  const dupes = toImport.length - newOnes.length;
+
+  state.transactions.push(...newOnes);
+  saveState();
+  closeModal('modal-import-result');
+  refreshActive();
+
+  let msg = `✅ Импортировано: ${newOnes.length}`;
+  if(dupes) msg += ` (${dupes} дублей пропущено)`;
+  showToast(msg);
+}
+
+/* =============================================
+   БИОМЕТРИЯ (Web Authentication API)
+   Работает на iOS Safari 14+ и Android Chrome 67+
+   ============================================= */
+let credentialId = null;
+
+async function tryBiometric() {
+  try {
+    const stored = localStorage.getItem('budget_biometric_id');
+    if(!stored) return;
+
+    const challenge = new Uint8Array(32);
+    crypto.getRandomValues(challenge);
+
+    const assertion = await navigator.credentials.get({
+      publicKey: {
+        challenge,
+        timeout: 30000,
+        allowCredentials: [{
+          id: Uint8Array.from(atob(stored), c => c.charCodeAt(0)),
+          type: 'public-key',
+          transports: ['internal']
+        }],
+        userVerification: 'required'
+      }
+    });
+
+    if(assertion) {
+      hideLockScreen();
+      showToast('✅ Вход по отпечатку');
+    }
+  } catch(e) {
+    if(e.name !== 'NotAllowedError') {
+      showToast('Биометрия недоступна');
+    }
+  }
+}
+
+async function enrollBiometric() {
+  if(!window.PublicKeyCredential) {
+    showToast('Ваш браузер не поддерживает биометрию');
+    return false;
+  }
+
+  try {
+    const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+    if(!available) {
+      showToast('Отпечаток пальца недоступен на этом устройстве');
+      return false;
+    }
+
+    const challenge = new Uint8Array(32);
+    crypto.getRandomValues(challenge);
+    const userId = new Uint8Array(16);
+    crypto.getRandomValues(userId);
+
+    const credential = await navigator.credentials.create({
+      publicKey: {
+        challenge,
+        rp: { name: 'Семейный бюджет', id: location.hostname || 'localhost' },
+        user: { id: userId, name: 'user', displayName: 'Пользователь' },
+        pubKeyCredParams: [{ alg: -7, type: 'public-key' }, { alg: -257, type: 'public-key' }],
+        authenticatorSelection: {
+          authenticatorAttachment: 'platform',
+          userVerification: 'required'
+        },
+        timeout: 30000
+      }
+    });
+
+    // Сохраняем ID учётных данных
+    const idB64 = btoa(String.fromCharCode(...new Uint8Array(credential.rawId)));
+    localStorage.setItem('budget_biometric_id', idB64);
+    return true;
+  } catch(e) {
+    if(e.name === 'NotAllowedError') showToast('Биометрия отменена');
+    else showToast('Ошибка: ' + e.message);
+    return false;
+  }
+}
+
+// Обновляем UI блокировки — показываем кнопку биометрии если зарегистрирована
+function updateBiometricButton() {
+  const btn = document.getElementById('biometric-btn');
+  if(!btn) return;
+  const hasBio = !!localStorage.getItem('budget_biometric_id');
+  btn.style.display = hasBio ? '' : 'none';
+}
+
+// Переопределяем showLockScreen чтобы показывать биометрию
+const _origShowLockScreen = window.showLockScreen;
+window.showLockScreen = function() {
+  _origShowLockScreen();
+  updateBiometricButton();
+  // Автоматически пробуем биометрию при открытии
+  const hasBio = !!localStorage.getItem('budget_biometric_id');
+  if(hasBio) setTimeout(() => tryBiometric(), 400);
+};
+
+/* =============================================
+   КРЕДИТ КАК КАТЕГОРИЯ РАСХОДА
+   При добавлении расхода — можно выбрать кредит как "куда ушли деньги"
+   ============================================= */
+const _origRenderCategoryGrid = window.renderCategoryGrid;
+window.renderCategoryGrid = function() {
+  const type = editing.type;
+
+  // Базовые категории
+  let html = state.categories[type].map(c => `
+    <div class="cat-pick${editing.categoryId===c.id?' active':''}" onclick="selectCategory('${c.id}')">
+      <div class="cat-pick-emoji">${c.icon}</div>
+      <div class="cat-pick-name">${escapeHtml(c.name)}</div>
+    </div>`).join('');
+
+  // Для расходов добавляем кредиты как категории
+  if(type === 'expense' && state.credits && state.credits.length) {
+    const credits = state.credits.filter(cr => {
+      const { nextPayment } = getCreditStats(cr);
+      return nextPayment; // только активные
+    });
+
+    if(credits.length) {
+      const creditHtml = credits.map(cr => {
+        const bankColor = BANK_COLORS[cr.bank] || '#0F5C5B';
+        const catKey = 'credit_' + cr.id;
+        const isActive = editing.categoryId === catKey;
+        return `
+          <div class="cat-pick credit-pick${isActive?' active':''}" onclick="selectCreditCategory('${cr.id}')">
+            <div class="cat-pick-emoji">🏦</div>
+            <div class="cat-pick-name" style="color:${isActive?'var(--warning)':''};">${escapeHtml(cr.name.slice(0,12))}</div>
+          </div>`;
+      }).join('');
+
+      // Вставляем кредиты в начало
+      html = `
+        <div style="grid-column: 1/-1; font-size:11px; color:var(--warning); font-weight:600; padding:2px 4px; letter-spacing:.02em; text-transform:uppercase;">💳 Платёж по кредиту</div>
+        ${creditHtml}
+        <div style="grid-column: 1/-1; height:1px; background:var(--border); margin:4px 0;"></div>
+        <div style="grid-column: 1/-1; font-size:11px; color:var(--text-tertiary); font-weight:600; padding:2px 4px; letter-spacing:.02em; text-transform:uppercase;">Категории</div>
+        ${html}`;
+    }
+  }
+
+  document.getElementById('cat-grid').innerHTML = html;
+};
+
+function selectCreditCategory(creditId) {
+  editing.categoryId = 'credit_' + creditId;
+  window.renderCategoryGrid();
+}
+
+// Патчим saveTransaction для обработки категории-кредита
+const _origSaveTransaction = window.saveTransaction;
+window.saveTransaction = function() {
+  // Если выбран кредит как категория — автоматически создаём заметку
+  if(editing.categoryId && editing.categoryId.startsWith('credit_')) {
+    const creditId = editing.categoryId.replace('credit_', '');
+    const cr = state.credits.find(c => c.id === creditId);
+    if(cr) {
+      // Добавляем примечание что это платёж по кредиту
+      const noteInput = document.getElementById('add-note');
+      if(!noteInput.value) {
+        noteInput.value = `Платёж по кредиту: ${cr.name}`;
+      }
+      // Меняем categoryId на "прочее" чтобы транзакция сохранилась нормально
+      editing.categoryId = 'c_other';
+    }
+  }
+  _origSaveTransaction();
+};
+
+/* =============================================
+   БИОМЕТРИЯ В НАСТРОЙКАХ
+   ============================================= */
+// Добавляем строку биометрии в настройки безопасности
+function addBiometricSettingsRow() {
+  const secCard = document.querySelector('#screen-settings .settings-card');
+  if(!secCard || document.getElementById('biometric-settings-row')) return;
+
+  const row = document.createElement('div');
+  row.className = 'settings-row';
+  row.id = 'biometric-settings-row';
+  row.style.borderTop = '1px solid var(--border)';
+  row.innerHTML = `
+    <div class="cat-icon">👆</div>
+    <div class="cat-name">Отпечаток пальца / Face ID</div>
+    <div class="cat-value" id="biometric-status">${localStorage.getItem('budget_biometric_id') ? 'Вкл' : 'Выкл'}</div>
+  `;
+  row.onclick = toggleBiometric;
+  secCard.appendChild(row);
+}
+
+async function toggleBiometric() {
+  const hasBio = !!localStorage.getItem('budget_biometric_id');
+  if(hasBio) {
+    if(!confirm('Отключить вход по отпечатку?')) return;
+    localStorage.removeItem('budget_biometric_id');
+    document.getElementById('biometric-status').textContent = 'Выкл';
+    showToast('Биометрия отключена');
+  } else {
+    if(!settings.pinHash) {
+      showToast('Сначала установите ПИН-код');
+      return;
+    }
+    const ok = await enrollBiometric();
+    if(ok) {
+      document.getElementById('biometric-status').textContent = 'Вкл';
+      showToast('✅ Отпечаток зарегистрирован');
+    }
+  }
+}
+
+// Добавляем строку биометрии при переходе в настройки
+const _origRenderSettings = window.renderSettings;
+window.renderSettings = function() {
+  _origRenderSettings();
+  setTimeout(addBiometricSettingsRow, 50);
+};
+
+/* =============================================
+   ИНИЦИАЛИЗАЦИЯ НОВЫХ ФУНКЦИЙ
+   ============================================= */
+// Ждём загрузки PDF.js
+window.addEventListener('load', () => {
+  if(typeof pdfjsLib !== 'undefined') {
+    pdfjsLib.GlobalWorkerOptions.workerSrc =
+      'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+  }
+  updateBiometricButton();
+});
+</script>
+<script>
+/* =============================================
+   SUPABASE — синхронизация между устройствами
+   v6.0 — Ануар Агманов, семейный бюджет
+   ============================================= */
+
+const SUPA_URL = 'https://vhklrlhiggkxqjgdccpy.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZoa2xybGhpZ2dreHFqZ2RjY3B5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MDk2MDAsImV4cCI6MjA5NzE4NTYwMH0.g7EeBU9AzRLpYkl3Z5PSlHgTPqGK_CWV-ZM9ptX7VcA';
+
+// Инициализируем клиент после загрузки библиотеки
+let supa = null;
+let USER_ID = null;
+let syncEnabled = false;
+let syncQueue = []; // очередь операций при оффлайне
+let isSyncing = false;
+
+function initSupabase() {
+  try {
+    supa = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+
+    // Уникальный ID пользователя — храним в localStorage
+    // Один и тот же на всех устройствах где введёт один и тот же "логин"
+    USER_ID = localStorage.getItem('budget_user_id');
+    if(!USER_ID) {
+      USER_ID = 'u_' + Date.now() + '_' + Math.random().toString(36).slice(2, 10);
+      localStorage.setItem('budget_user_id', USER_ID);
+    }
+
+    syncEnabled = true;
+    console.log('Supabase OK, user:', USER_ID);
+
+    // Первая загрузка — тянем данные с сервера
+    pullFromCloud();
+  } catch(e) {
+    console.warn('Supabase init failed:', e);
+    syncEnabled = false;
+  }
+}
+
+/* =============================================
+   ИНДИКАТОР СИНХРОНИЗАЦИИ
+   ============================================= */
+function showSyncBar(text, color) {
+  const bar = document.getElementById('sync-bar');
+  const txt = document.getElementById('sync-bar-text');
+  bar.style.display = '';
+  bar.style.background = color || 'var(--accent)';
+  txt.textContent = text;
+}
+function hideSyncBar() {
+  setTimeout(() => {
+    document.getElementById('sync-bar').style.display = 'none';
+  }, 1500);
+}
+
+/* =============================================
+   PULL — загрузка данных с сервера
+   ============================================= */
+async function pullFromCloud() {
+  if(!syncEnabled || !supa) return;
+
+  showSyncBar('⟳ Загружаю данные...', 'var(--accent)');
+
+  try {
+    // Грузим все таблицы параллельно
+    const [txRes, catRes, recRes, crRes, goRes] = await Promise.all([
+      supa.from('transactions').select('*').eq('user_id', USER_ID).order('created_at'),
+      supa.from('categories').select('*').eq('user_id', USER_ID).order('sort_order'),
+      supa.from('recurring').select('*').eq('user_id', USER_ID),
+      supa.from('credits').select('*').eq('user_id', USER_ID),
+      supa.from('goals').select('*').eq('user_id', USER_ID).order('created_at'),
+    ]);
+
+    // Если есть данные на сервере — используем их
+    const hasCloudData =
+      (txRes.data && txRes.data.length > 0) ||
+      (catRes.data && catRes.data.length > 0) ||
+      (crRes.data && crRes.data.length > 0) ||
+      (goRes.data && goRes.data.length > 0);
+
+    if(hasCloudData) {
+      // Мержим транзакции
+      if(txRes.data && txRes.data.length > 0) {
+        state.transactions = txRes.data.map(r => ({
+          id: r.id,
+          type: r.type,
+          amount: Number(r.amount),
+          categoryId: r.category_id,
+          date: r.date,
+          note: r.note || '',
+          createdAt: r.created_at
+        }));
+      }
+
+      // Категории
+      if(catRes.data && catRes.data.length > 0) {
+        state.categories = { expense: [], income: [] };
+        for(const r of catRes.data) {
+          if(state.categories[r.type]) {
+            state.categories[r.type].push({ id: r.id, name: r.name, icon: r.icon });
+          }
+        }
+        // Если категорий нет — ставим дефолтные
+        if(!state.categories.expense.length) state.categories.expense = JSON.parse(JSON.stringify(DEFAULT_CATEGORIES.expense));
+        if(!state.categories.income.length) state.categories.income = JSON.parse(JSON.stringify(DEFAULT_CATEGORIES.income));
+      }
+
+      // Регулярные
+      if(recRes.data) {
+        state.recurring = recRes.data.map(r => ({
+          id: r.id, name: r.name,
+          amount: Number(r.amount), day: r.day,
+          categoryId: r.category_id
+        }));
+      }
+
+      // Кредиты
+      if(crRes.data) {
+        state.credits = crRes.data.map(r => ({
+          id: r.id, bank: r.bank, name: r.name,
+          amount: Number(r.amount), rate: Number(r.rate),
+          startDate: r.start_date, months: r.months,
+          schedule: r.schedule || null,
+          currentBalance: Number(r.current_balance || 0),
+          payment: Number(r.payment || 0),
+          nextDate: r.next_date || ''
+        }));
+      }
+
+      // Цели
+      if(goRes.data) {
+        state.goals = goRes.data.map(r => ({
+          id: r.id, name: r.name, icon: r.icon,
+          target: Number(r.target), current: Number(r.current || 0),
+          deadline: r.deadline || null, priority: r.priority || 'med',
+          createdAt: r.created_at
+        }));
+      }
+
+      // Сохраняем в localStorage как кэш
+      saveState();
+      refreshActive();
+      showSyncBar('✓ Данные загружены', '#0F5C5B');
+      hideSyncBar();
+    } else {
+      // Облако пустое — заливаем локальные данные
+      showSyncBar('⟳ Загружаю на сервер...', 'var(--warning)');
+      await pushAllToCloud();
+      showSyncBar('✓ Данные синхронизированы', '#0F5C5B');
+      hideSyncBar();
+    }
+  } catch(e) {
+    console.error('Pull error:', e);
+    showSyncBar('⚠ Работаю офлайн', '#C28A1F');
+    hideSyncBar();
+  }
+}
+
+/* =============================================
+   PUSH ALL — первичная заливка всех данных
+   ============================================= */
+async function pushAllToCloud() {
+  if(!syncEnabled || !supa) return;
+
+  try {
+    // Транзакции
+    if(state.transactions.length) {
+      await supa.from('transactions').upsert(
+        state.transactions.map(t => ({
+          id: t.id, user_id: USER_ID,
+          type: t.type, amount: t.amount,
+          category_id: t.categoryId,
+          date: t.date, note: t.note || '',
+          created_at: t.createdAt || Date.now()
+        }))
+      );
+    }
+
+    // Категории
+    const allCats = [
+      ...state.categories.expense.map((c, i) => ({ ...c, type: 'expense', sort: i })),
+      ...state.categories.income.map((c, i) => ({ ...c, type: 'income', sort: i }))
+    ];
+    if(allCats.length) {
+      await supa.from('categories').upsert(
+        allCats.map(c => ({
+          id: c.id, user_id: USER_ID,
+          type: c.type, name: c.name,
+          icon: c.icon, sort_order: c.sort || 0
+        }))
+      );
+    }
+
+    // Регулярные
+    if(state.recurring.length) {
+      await supa.from('recurring').upsert(
+        state.recurring.map(r => ({
+          id: r.id, user_id: USER_ID,
+          name: r.name, amount: r.amount,
+          day: r.day, category_id: r.categoryId
+        }))
+      );
+    }
+
+    // Кредиты
+    if(state.credits.length) {
+      await supa.from('credits').upsert(
+        state.credits.map(c => ({
+          id: c.id, user_id: USER_ID,
+          bank: c.bank, name: c.name,
+          amount: c.amount, rate: c.rate,
+          start_date: c.startDate, months: c.months,
+          schedule: c.schedule,
+          current_balance: c.currentBalance || 0,
+          payment: c.payment || 0,
+          next_date: c.nextDate || ''
+        }))
+      );
+    }
+
+    // Цели
+    if(state.goals.length) {
+      await supa.from('goals').upsert(
+        state.goals.map(g => ({
+          id: g.id, user_id: USER_ID,
+          name: g.name, icon: g.icon,
+          target: g.target, current: g.current || 0,
+          deadline: g.deadline || null,
+          priority: g.priority || 'med',
+          created_at: g.createdAt || Date.now()
+        }))
+      );
+    }
+  } catch(e) {
+    console.error('PushAll error:', e);
+  }
+}
+
+/* =============================================
+   SYNC ОПЕРАЦИИ — вызываются при каждом изменении
+   ============================================= */
+
+// Сохранить / обновить транзакцию
+async function syncTransaction(tx, deleted = false) {
+  if(!syncEnabled || !supa) return;
+  try {
+    if(deleted) {
+      await supa.from('transactions').delete().eq('id', tx.id).eq('user_id', USER_ID);
+    } else {
+      await supa.from('transactions').upsert({
+        id: tx.id, user_id: USER_ID,
+        type: tx.type, amount: tx.amount,
+        category_id: tx.categoryId,
+        date: tx.date, note: tx.note || '',
+        created_at: tx.createdAt || Date.now()
+      });
+    }
+    showSyncBar('✓ Сохранено', '#0F5C5B');
+    hideSyncBar();
+  } catch(e) {
+    console.warn('Sync tx error:', e);
+    showSyncBar('⚠ Сохранено локально', '#C28A1F');
+    hideSyncBar();
+  }
+}
+
+// Сохранить категорию
+async function syncCategory(cat, type, deleted = false) {
+  if(!syncEnabled || !supa) return;
+  try {
+    if(deleted) {
+      await supa.from('categories').delete().eq('id', cat.id).eq('user_id', USER_ID);
+    } else {
+      await supa.from('categories').upsert({
+        id: cat.id, user_id: USER_ID,
+        type, name: cat.name, icon: cat.icon
+      });
+    }
+  } catch(e) { console.warn('Sync cat error:', e); }
+}
+
+// Сохранить регулярный платёж
+async function syncRecurring(rec, deleted = false) {
+  if(!syncEnabled || !supa) return;
+  try {
+    if(deleted) {
+      await supa.from('recurring').delete().eq('id', rec.id).eq('user_id', USER_ID);
+    } else {
+      await supa.from('recurring').upsert({
+        id: rec.id, user_id: USER_ID,
+        name: rec.name, amount: rec.amount,
+        day: rec.day, category_id: rec.categoryId
+      });
+    }
+  } catch(e) { console.warn('Sync rec error:', e); }
+}
+
+// Сохранить кредит
+async function syncCredit(cr, deleted = false) {
+  if(!syncEnabled || !supa) return;
+  try {
+    if(deleted) {
+      await supa.from('credits').delete().eq('id', cr.id).eq('user_id', USER_ID);
+    } else {
+      await supa.from('credits').upsert({
+        id: cr.id, user_id: USER_ID,
+        bank: cr.bank, name: cr.name,
+        amount: cr.amount, rate: cr.rate,
+        start_date: cr.startDate, months: cr.months,
+        schedule: cr.schedule,
+        current_balance: cr.currentBalance || 0,
+        payment: cr.payment || 0,
+        next_date: cr.nextDate || ''
+      });
+    }
+  } catch(e) { console.warn('Sync credit error:', e); }
+}
+
+// Сохранить цель
+async function syncGoal(goal, deleted = false) {
+  if(!syncEnabled || !supa) return;
+  try {
+    if(deleted) {
+      await supa.from('goals').delete().eq('id', goal.id).eq('user_id', USER_ID);
+    } else {
+      await supa.from('goals').upsert({
+        id: goal.id, user_id: USER_ID,
+        name: goal.name, icon: goal.icon,
+        target: goal.target, current: goal.current || 0,
+        deadline: goal.deadline || null,
+        priority: goal.priority || 'med',
+        created_at: goal.createdAt || Date.now()
+      });
+    }
+  } catch(e) { console.warn('Sync goal error:', e); }
+}
+
+/* =============================================
+   ПЕРЕХВАТЫВАЕМ ОСНОВНЫЕ ФУНКЦИИ СОХРАНЕНИЯ
+   Добавляем синхронизацию к каждому действию
+   ============================================= */
+
+// Транзакции
+const _save_saveTransaction = window.saveTransaction;
+window.saveTransaction = async function() {
+  _save_saveTransaction();
+  // Находим только что сохранённую транзакцию (последнюю)
+  const tx = state.transactions[state.transactions.length - 1];
+  if(tx) syncTransaction(tx);
+};
+
+// Удаление транзакции
+const _save_deleteCurrentTx = window.deleteCurrentTx;
+window.deleteCurrentTx = function() {
+  const tx = editing.tx;
+  _save_deleteCurrentTx();
+  if(tx) syncTransaction(tx, true);
+};
+
+// Категории
+const _save_saveCategory = window.saveCategory;
+window.saveCategory = function() {
+  _save_saveCategory();
+  // Синхронизируем последнюю изменённую категорию
+  const type = editing.categoryType;
+  const cats = state.categories[type];
+  const cat = editing.category || cats[cats.length - 1];
+  if(cat) syncCategory(cat, type);
+};
+
+const _save_deleteCategory = window.deleteCategory;
+window.deleteCategory = function() {
+  const cat = editing.category;
+  const type = editing.categoryType;
+  _save_deleteCategory();
+  if(cat) syncCategory(cat, type, true);
+};
+
+// Регулярные платежи
+const _save_saveRecurring = window.saveRecurring;
+window.saveRecurring = function() {
+  _save_saveRecurring();
+  const rec = editing.recurring || state.recurring[state.recurring.length - 1];
+  if(rec) syncRecurring(rec);
+};
+
+const _save_deleteRecurring = window.deleteRecurring;
+window.deleteRecurring = function() {
+  const rec = editing.recurring;
+  _save_deleteRecurring();
+  if(rec) syncRecurring(rec, true);
+};
+
+// Кредиты
+const _save_saveCredit = window.saveCredit;
+window.saveCredit = function() {
+  _save_saveCredit();
+  const cr = editing.credit || state.credits[state.credits.length - 1];
+  if(cr) syncCredit(cr);
+};
+
+const _save_deleteCredit = window.deleteCredit;
+window.deleteCredit = function() {
+  const cr = editing.credit;
+  _save_deleteCredit();
+  if(cr) syncCredit(cr, true);
+};
+
+// Цели
+const _save_saveGoal = window.saveGoal;
+window.saveGoal = function() {
+  _save_saveGoal();
+  const goal = editing.goal || state.goals[state.goals.length - 1];
+  if(goal) syncGoal(goal);
+};
+
+const _save_deleteGoal = window.deleteGoal;
+window.deleteGoal = function() {
+  const goal = editing.goal;
+  _save_deleteGoal();
+  if(goal) syncGoal(goal, true);
+};
+
+// Пополнение цели
+const _save_saveDeposit = window.saveDeposit;
+window.saveDeposit = function(withdraw) {
+  _save_saveDeposit(withdraw);
+  const goal = state.goals.find(g => g.id === editing.depositGoalId);
+  if(goal) syncGoal(goal);
+};
+
+/* =============================================
+   ЭКРАН СИНХРОНИЗАЦИИ — кнопка "Синхронизировать"
+   и смена User ID для доступа с другого устройства
+   ============================================= */
+function addSyncSettingsBlock() {
+  // Проверяем нет ли уже блока
+  if(document.getElementById('sync-settings-block')) return;
+
+  const settingsScreen = document.getElementById('screen-settings');
+  if(!settingsScreen) return;
+
+  // Находим раздел "Данные" и вставляем перед ним
+  const dataSection = Array.from(settingsScreen.querySelectorAll('.section')).find(s =>
+    s.querySelector('h2') && s.querySelector('h2').textContent.includes('Данные')
+  );
+
+  const block = document.createElement('div');
+  block.className = 'section';
+  block.id = 'sync-settings-block';
+  block.innerHTML = `
+    <div class="section-title"><h2>Синхронизация</h2></div>
+    <div class="settings-card">
+      <div class="settings-row" onclick="manualSync()">
+        <div class="cat-icon">🔄</div>
+        <div class="cat-name">Синхронизировать сейчас</div>
+        <div class="cat-value" id="sync-status-text">${syncEnabled ? 'Онлайн' : 'Офлайн'}</div>
+      </div>
+      <div class="settings-row" onclick="showUserIdModal()">
+        <div class="cat-icon">🔗</div>
+        <div class="cat-name">Подключить другое устройство</div>
+        <div class="cat-value">ID доступа</div>
+      </div>
+    </div>
+    <div style="font-size:12px; color:var(--text-tertiary); padding:0 4px; margin-top:6px;">
+      Данные автоматически синхронизируются между всеми устройствами где введёт один и тот же ID
+    </div>
+  `;
+
+  if(dataSection) {
+    settingsScreen.insertBefore(block, dataSection);
+  } else {
+    settingsScreen.appendChild(block);
+  }
+}
+
+async function manualSync() {
+  showSyncBar('⟳ Синхронизация...', 'var(--accent)');
+  await pullFromCloud();
+  document.getElementById('sync-status-text').textContent = syncEnabled ? 'Онлайн ✓' : 'Офлайн';
+}
+
+// Модал для смены / копирования User ID
+function showUserIdModal() {
+  let modal = document.getElementById('modal-user-id');
+  if(!modal) {
+    modal = document.createElement('div');
+    modal.className = 'modal-backdrop';
+    modal.id = 'modal-user-id';
+    modal.innerHTML = `
+      <div class="modal">
+        <div class="modal-header">
+          <h2>Подключить устройство</h2>
+          <button class="modal-close" onclick="closeModal('modal-user-id')">✕</button>
+        </div>
+        <div class="modal-body">
+          <p style="font-size:14px; color:var(--text-secondary); margin:0 0 16px;">
+            Чтобы видеть одни данные на телефоне и компьютере — введите одинаковый ID на обоих устройствах.
+          </p>
+          <div class="field">
+            <label class="field-label">Ваш ID доступа</label>
+            <input type="text" class="field-input" id="user-id-input"
+              value="${USER_ID}" style="font-size:12px; font-family:monospace;">
+          </div>
+          <button class="btn-primary" onclick="applyUserId()">Применить ID</button>
+          <button class="btn-secondary" onclick="copyUserId()">📋 Скопировать мой ID</button>
+          <div style="margin-top:16px; padding:12px; background:var(--warning-soft);
+            border-radius:10px; font-size:12px; color:var(--warning);">
+            ⚠️ После смены ID данные загрузятся с нового аккаунта. Сначала экспортируйте текущие данные если нужно.
+          </div>
+        </div>
+      </div>`;
+    modal.addEventListener('click', e => { if(e.target === modal) modal.classList.remove('active'); });
+    document.body.appendChild(modal);
+  }
+  document.getElementById('user-id-input').value = USER_ID;
+  openModal('modal-user-id');
+}
+
+function copyUserId() {
+  navigator.clipboard.writeText(USER_ID).then(() => {
+    showToast('ID скопирован — вставьте на другом устройстве');
+  }).catch(() => {
+    showToast('Скопируйте ID вручную: ' + USER_ID.slice(0, 20) + '...');
+  });
+}
+
+async function applyUserId() {
+  const newId = document.getElementById('user-id-input').value.trim();
+  if(!newId || newId.length < 5) { showToast('Введите корректный ID'); return; }
+  if(newId === USER_ID) { closeModal('modal-user-id'); return; }
+
+  USER_ID = newId;
+  localStorage.setItem('budget_user_id', USER_ID);
+  closeModal('modal-user-id');
+  showToast('ID изменён, загружаю данные...');
+  await pullFromCloud();
+}
+
+/* =============================================
+   ПАТЧИМ renderSettings чтобы добавлять блок синка
+   ============================================= */
+const _origRenderSettingsSync = window.renderSettings;
+window.renderSettings = function() {
+  _origRenderSettingsSync();
+  setTimeout(addSyncSettingsBlock, 60);
+};
+
+/* =============================================
+   ЗАПУСК SUPABASE
+   ============================================= */
+window.addEventListener('load', () => {
+  // Ждём загрузки библиотеки Supabase
+  let attempts = 0;
+  const tryInit = setInterval(() => {
+    attempts++;
+    if(window.supabase) {
+      clearInterval(tryInit);
+      initSupabase();
+    } else if(attempts > 20) {
+      clearInterval(tryInit);
+      console.warn('Supabase library not loaded, working offline');
+    }
+  }, 200);
+});
+</script>
